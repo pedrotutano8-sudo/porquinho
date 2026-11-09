@@ -1,0 +1,9 @@
+// Publica o painel como site estático no Cloudflare (Workers com arquivos estáticos).
+{
+  "name": "porquinho",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./painel",
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Leads</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f766e'/><text x='16' y='22' font-size='17' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>L</text></svg>">
+<style>
+  :root { --bg:#f7f7f5; --panel:#fff; --ink:#1c1c1a; --mute:#6b6b66; --line:#e6e5e0; --brand:#0f766e; --brand-soft:#e6f4f2; --red:#b42318; --red-soft:#fdecea; --amber:#b54708; --amber-soft:#fef4e6; --green:#067647; --green-soft:#e7f6ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; gap:16px; padding:12px 24px; background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; }
+  nav { display:flex; gap:4px; }
+  nav button { background:none; border:0; padding:6px 10px; border-radius:6px; color:var(--mute); cursor:pointer; font:inherit; }
+  nav button.on { background:var(--brand-soft); color:var(--brand); font-weight:600; }
+  .grow { flex:1; }
+  main { max-width:1180px; margin:0 auto; padding:24px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card .k { color:var(--mute); font-size:12px; } .card .v { font-size:24px; font-weight:650; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:auto; }
+  .box h2 { font-size:14px; margin:0; padding:14px 16px; border-bottom:1px solid var(--line); }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:12px; color:var(--mute); font-weight:500; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td { border-bottom:0; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bar { position:relative; height:8px; background:#eeede8; border-radius:4px; min-width:120px; }
+  .bar i { position:absolute; inset:0 auto 0 0; background:var(--brand); border-radius:4px; }
+  .bar b { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); }
+  .tag { display:inline-block; padding:1px 7px; border-radius:5px; font-size:12px; font-weight:500; white-space:nowrap; }
+  .t-enviado { background:var(--green-soft); color:var(--green); } .t-falhou, .t-sem_pj { background:var(--red-soft); color:var(--red); }
+  .t-pendente { background:var(--amber-soft); color:var(--amber); } .t-teste { background:#eef0f6; color:#3e4c7a; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  input, select, textarea { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
+  .btn { font:inherit; padding:7px 12px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; white-space:nowrap; }
+  .btn.pri { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .mute { color:var(--mute); } .small { font-size:12px; }
+  .empty { padding:28px; text-align:center; color:var(--mute); }
+  .login { max-width:360px; margin:12vh auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:28px; }
+  .login h1 { font-size:18px; margin:0 0 6px; } .login input { width:100%; margin:14px 0 10px; }
+  .login .btn { width:100%; }
+  dialog { border:1px solid var(--line); border-radius:12px; padding:20px; width:min(420px,92vw); }
+  dialog label { display:block; font-size:12px; color:var(--mute); margin:10px 0 4px; } dialog input { width:100%; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 14px; border-radius:8px; font-size:13px; display:none; z-index:20; }
+  @media (max-width:640px) { main { padding:14px; } header { padding:10px 14px; } .hide-sm { display:none; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<dialog id="dlgPj">
+  <form method="dialog" id="formPj">
+    <strong id="dlgPjTitulo">Novo PJ</strong>
+    <label>Nome</label><input name="nome" required>
+    <label>WhatsApp (com DDD)</label><input name="whatsapp" required placeholder="(19) 99999-9999">
+    <label>Cidade</label><input name="cidade">
+    <label>Investimento no mês (R$)</label><input name="valor" type="number" min="0" step="0.01">
+    <label><input type="checkbox" name="ativo" checked style="width:auto"> Ativo (recebe leads)</label>
+    <div class="row" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button class="btn pri" value="ok">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const cfg = window.PORQUINHO || {};
+const sb = supabase.createClient(cfg.url, cfg.anonKey);
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const brl = (n) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const pct = (n) => (Number(n || 0) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+const fone = (t) => { const d = String(t || '').replace(/\D/g, '').replace(/^55/, ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : t || ''; };
+const soNum = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };
+const dataHora = (d) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const mesAtual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
+const toast = (m) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (t.style.display = 'none'), 2600); };
+
+const S = { aba: 'visao', mes: mesAtual(), cotas: [], leads: [], pjs: [], inv: {}, filtro: { pj: '', status: '', busca: '', testes: false } };
+
+async function iniciar() {
+  if (!cfg.url || !cfg.anonKey) { $('#app').innerHTML = '<div class="login"><h1>Configuração faltando</h1><p class="mute">Preencha o arquivo config.js com a URL e a chave pública do Supabase.</p></div>'; return; }
+  const { data } = await sb.auth.getSession();
+  sb.auth.onAuthStateChange((_e, s) => { if (s && !S.logado) { S.logado = true; carregar(); } if (!s) { S.logado = false; telaLogin(); } });
+  if (data.session) { S.logado = true; carregar(); } else telaLogin();
+}
+
+function telaLogin(msg = '') {
+  $('#app').innerHTML = `<div class="login"><h1>Painel de Leads</h1><p class="mute small">Entre com o seu e-mail. Você recebe um link de acesso.</p>
+    <form id="fLogin"><input type="email" name="email" placeholder="seu@email.com" required><button class="btn pri">Receber link</button></form>
+    <p class="small mute" id="msgLogin">${esc(msg)}</p></div>`;
+  $('#fLogin').onsubmit = async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value.trim();
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0] } });
+    $('#msgLogin').textContent = error ? 'Não consegui enviar: ' + error.message : 'Pronto! Abra o link que chegou no seu e-mail.';
+  };
+}
+
+async function carregar() {
+  const fim = new Date(S.mes + 'T00:00:00'); fim.setMonth(fim.getMonth() + 1);
+  const [c, l, p, i] = await Promise.all([
+    sb.rpc('cotas_mes', { p_mes: S.mes }),
+    sb.from('leads').select('*').gte('criado_em', new Date(S.mes + 'T00:00:00').toISOString()).lt('criado_em', fim.toISOString()).order('criado_em', { ascending: false }).limit(5000),
+    sb.from('pjs').select('*').order('nome'),
+    sb.from('investimentos').select('*').eq('mes', S.mes),
+  ]);
+  const erro = c.error || l.error || p.error || i.error;
+  if (erro) { $('#app').innerHTML = `<div class="login"><h1>Sem acesso</h1><p class="mute">${esc(erro.message)}</p><p class="small mute">Se você acabou de entrar, peça para incluir o seu e-mail na equipe do painel.</p><button class="btn" onclick="sb.auth.signOut()">Sair</button></div>`; return; }
+  S.cotas = c.data || []; S.leads = l.data || []; S.pjs = p.data || [];
+  S.inv = Object.fromEntries((i.data || []).map((x) => [x.pj_id, Number(x.valor)]));
+  render();
+}
+
+function render() {
+  const meses = []; const d = new Date(); d.setDate(1);
+  for (let k = 0; k < 12; k++) { const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; meses.push(m); d.setMonth(d.getMonth() - 1); }
+  const nomeMes = (m) => new Date(m + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  $('#app').innerHTML = `
+    <header>
+      <h1>Painel de Leads</h1>
+      <nav>${[['visao', 'Visão geral'], ['leads', 'Leads'], ['pjs', 'PJs']].map(([k, t]) => `<button data-aba="${k}" class="${S.aba === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
+      <span class="grow"></span>
+      <select id="selMes">${meses.map((m) => `<option value="${m}" ${m === S.mes ? 'selected' : ''}>${nomeMes(m)}</option>`).join('')}</select>
+      <button class="btn" id="btnSair">Sair</button>
+    </header>
+    <main id="conteudo"></main>`;
+  document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => { S.aba = b.dataset.aba; render(); }));
+  $('#selMes').onchange = (e) => { S.mes = e.target.value; carregar(); };
+  $('#btnSair').onclick = () => sb.auth.signOut();
+  ({ visao: renderVisao, leads: renderLeads, pjs: renderPjs })[S.aba]();
+}
+
+function renderVisao() {
+  const reais = S.leads.filter((l) => l.origem !== 'teste');
+  const invTotal = S.cotas.reduce((s, c) => s + Number(c.investimento), 0);
+  const enviados = reais.filter((l) => l.entrega_status === 'enviado').length;
+  const problemas = reais.filter((l) => ['falhou', 'sem_pj'].includes(l.entrega_status)).length;
+  const comVerba = S.cotas.filter((c) => Number(c.investimento) > 0);
+  $('#conteudo').innerHTML = `
+    <div class="cards">
+      <div class="card"><div class="k">Leads no mês</div><div class="v">${reais.length}</div></div>
+      <div class="card"><div class="k">Entregues aos PJs</div><div class="v">${enviados}</div></div>
+      <div class="card"><div class="k">Com problema na entrega</div><div class="v ${problemas ? 'neg' : ''}">${problemas}</div></div>
+      <div class="card"><div class="k">Investimento do mês</div><div class="v">${brl(invTotal)}</div></div>
+      <div class="card"><div class="k">Custo por lead (verba ÷ leads)</div><div class="v">${reais.length ? brl(invTotal / reais.length) : '—'}</div></div>
+    </div>
+    <div class="box">
+      <h2>Divisão por PJ <span class="mute small" style="font-weight:400">· cota = investimento do PJ ÷ investimento total · traço = quanto deveria ter recebido até agora</span></h2>
+      ${comVerba.length ? `<table>
+        <tr><th>PJ</th><th class="num">Investimento</th><th class="num">Cota</th><th class="num">Recebidos</th><th class="num">Esperado</th><th class="num">Diferença</th><th class="hide-sm" style="width:28%">Recebidos × esperado</th></tr>
+        ${comVerba.map((c) => { const max = Math.max(1, ...comVerba.map((x) => Math.max(Number(x.recebidos), Number(x.esperado)))); const dv = Number(c.desvio);
+          return `<tr><td>${esc(c.nome)}<div class="small mute">${esc(fone(c.whatsapp))}</div></td>
+          <td class="num">${brl(c.investimento)}</td><td class="num">${pct(c.cota)}</td><td class="num">${c.recebidos}</td>
+          <td class="num">${Number(c.esperado).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</td>
+          <td class="num ${Math.abs(dv) < 1 ? '' : dv > 0 ? 'pos' : 'neg'}">${dv > 0 ? '+' : ''}${dv.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</td>
+          <td class="hide-sm"><div class="bar"><i style="width:${(100 * c.recebidos) / max}%"></i><b style="left:${(100 * c.esperado) / max}%"></b></div></td></tr>`; }).join('')}
+      </table>` : '<div class="empty">Nenhum PJ com investimento neste mês. Cadastre os PJs e o investimento na aba “PJs”.</div>'}
+    </div>
+    <p class="small mute">A diferença fica sempre perto de zero: cada lead novo vai para o PJ que está mais atrás da própria cota. Leads de teste não entram na conta.</p>`;
+}
+
+function renderLeads() {
+  const f = S.filtro;
+  const nomePj = Object.fromEntries(S.pjs.map((p) => [p.id, p.nome]));
+  const lista = S.leads.filter((l) => (f.testes || l.origem !== 'teste') && (!f.pj || l.pj_id === f.pj) && (!f.status || l.entrega_status === f.status) &&
+    (!f.busca || `${l.nome} ${l.telefone} ${l.cidade} ${l.produto}`.toLowerCase().includes(f.busca.toLowerCase())));
+  $('#conteudo').innerHTML = `
+    <div class="row">
+      <input id="fBusca" placeholder="Buscar nome, telefone, cidade" value="${esc(f.busca)}" style="min-width:220px">
+      <select id="fPj"><option value="">Todos os PJs</option>${S.pjs.map((p) => `<option value="${p.id}" ${f.pj === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
+      <select id="fStatus"><option value="">Todos os status</option>${[['enviado', 'Entregue'], ['pendente', 'Pendente'], ['falhou', 'Falhou'], ['sem_pj', 'Sem PJ']].map(([k, t]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <label class="small mute"><input type="checkbox" id="fTestes" ${f.testes ? 'checked' : ''}> Mostrar testes</label>
+      <span class="grow"></span>
+      <button class="btn" id="btnTeste">Simular lead de teste</button>
+      <button class="btn" id="btnCsv">Exportar CSV</button>
+    </div>
+    <div class="box">
+      ${lista.length ? `<table>
+        <tr><th>Quando</th><th>Lead</th><th class="hide-sm">Produto / cidade</th><th>PJ</th><th>Entrega</th></tr>
+        ${lista.map((l) => `<tr>
+          <td class="small">${dataHora(l.criado_em)}</td>
+          <td>${esc(l.nome || '—')}<div class="small mute">${l.telefone ? `<a href="https://wa.me/${esc(l.telefone)}" target="_blank" rel="noopener">${esc(fone(l.telefone))}</a>` : ''}</div></td>
+          <td class="hide-sm small">${esc(l.produto || '')}<div class="mute">${esc(l.cidade || '')}</div></td>
+          <td><select data-lead="${l.id}" class="selPj"><option value="">—</option>${S.pjs.map((p) => `<option value="${p.id}" ${l.pj_id === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></td>
+          <td>${l.origem === 'teste' ? '<span class="tag t-teste">teste</span> ' : ''}<span class="tag t-${l.entrega_status}" title="${esc(l.entrega_erro || '')}">${{ enviado: 'Entregue', pendente: 'Pendente', falhou: 'Falhou', sem_pj: 'Sem PJ' }[l.entrega_status]}</span></td>
+        </tr>`).join('')}
+      </table>` : '<div class="empty">Nenhum lead neste filtro.</div>'}
+    </div>
+    <p class="small mute">${lista.length} lead(s). Trocar o PJ no seletor reatribui o lead (ele volta para “Pendente” para reenvio).</p>`;
+  $('#fBusca').oninput = (e) => { f.busca = e.target.value; clearTimeout(renderLeads.t); renderLeads.t = setTimeout(() => { renderLeads(); $('#fBusca').focus(); $('#fBusca').setSelectionRange(f.busca.length, f.busca.length); }, 250); };
+  $('#fPj').onchange = (e) => { f.pj = e.target.value; renderLeads(); };
+  $('#fStatus').onchange = (e) => { f.status = e.target.value; renderLeads(); };
+  $('#fTestes').onchange = (e) => { f.testes = e.target.checked; renderLeads(); };
+  $('#btnCsv').onclick = () => exportarCsv(lista, nomePj);
+  $('#btnTeste').onclick = simularTeste;
+  document.querySelectorAll('.selPj').forEach((s) => (s.onchange = async () => {
+    const { error } = await sb.rpc('reatribuir_lead', { p_lead: s.dataset.lead, p_pj: s.value || null });
+    if (error) return toast('Erro: ' + error.message);
+    toast('Lead reatribuído'); carregar();
+  }));
+}
+
+async function simularTeste() {
+  const n = Math.floor(Math.random() * 9000) + 1000;
+  const { data, error } = await sb.from('leads').insert({ nome: 'Teste ' + n, telefone: '5519900' + String(n).padStart(6, '0'), produto: 'teste', cidade: 'Teste', origem: 'teste' }).select().single();
+  if (error) return toast('Erro: ' + error.message);
+  const r = await sb.rpc('distribuir_lead', { p_lead: data.id });
+  if (r.error) return toast('Erro: ' + r.error.message);
+  const pj = r.data?.[0];
+  toast(pj?.pj_nome ? `Teste foi para ${pj.pj_nome}` : 'Nenhum PJ com investimento no mês');
+  S.filtro.testes = true; carregar();
+}
+
+function exportarCsv(lista, nomePj) {
+  const linhas = [['data', 'nome', 'telefone', 'email', 'produto', 'cidade', 'pj', 'entrega', 'campanha', 'anuncio']]
+    .concat(lista.map((l) => [new Date(l.criado_em).toLocaleString('pt-BR'), l.nome, l.telefone, l.email, l.produto, l.cidade, nomePj[l.pj_id] || '', l.entrega_status, l.campanha, l.anuncio]));
+  const csv = linhas.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `leads-${S.mes.slice(0, 7)}.csv`; a.click();
+}
+
+function renderPjs() {
+  const total = S.pjs.filter((p) => p.ativo).reduce((s, p) => s + (S.inv[p.id] || 0), 0);
+  $('#conteudo').innerHTML = `
+    <div class="row"><button class="btn pri" id="btnNovoPj">Novo PJ</button><span class="grow"></span><span class="mute small">Investimento total de ${new Date(S.mes + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long' })}: <b>${brl(total)}</b></span></div>
+    <div class="box">
+      ${S.pjs.length ? `<table>
+        <tr><th>PJ</th><th>WhatsApp</th><th class="hide-sm">Cidade</th><th class="num">Investimento no mês</th><th class="num">Cota</th><th>Status</th><th></th></tr>
+        ${S.pjs.map((p) => `<tr>
+          <td>${esc(p.nome)}</td><td>${esc(fone(p.whatsapp))}</td><td class="hide-sm">${esc(p.cidade || '')}</td>
+          <td class="num"><input type="number" min="0" step="0.01" class="inpInv" data-pj="${p.id}" value="${S.inv[p.id] ?? ''}" placeholder="0,00" style="width:120px;text-align:right"></td>
+          <td class="num">${p.ativo && total ? pct((S.inv[p.id] || 0) / total) : '—'}</td>
+          <td>${p.ativo ? '<span class="tag t-enviado">Ativo</span>' : '<span class="tag t-pendente">Pausado</span>'}</td>
+          <td class="num"><button class="btn small btnEdit" data-pj="${p.id}">Editar</button></td>
+        </tr>`).join('')}
+      </table>` : '<div class="empty">Nenhum PJ cadastrado ainda.</div>'}
+    </div>
+    <p class="small mute">O investimento vale para o mês selecionado no topo. PJ pausado não recebe leads.</p>`;
+  $('#btnNovoPj').onclick = () => abrirPj();
+  document.querySelectorAll('.btnEdit').forEach((b) => (b.onclick = () => abrirPj(S.pjs.find((p) => p.id === b.dataset.pj))));
+  document.querySelectorAll('.inpInv').forEach((i) => (i.onchange = async () => {
+    const v = i.value === '' ? 0 : Number(i.value);
+    const { error } = await sb.from('investimentos').upsert({ pj_id: i.dataset.pj, mes: S.mes, valor: v });
+    if (error) return toast('Erro: ' + error.message);
+    toast('Investimento salvo'); carregar();
+  }));
+}
+
+function abrirPj(pj) {
+  const d = $('#dlgPj'), f = $('#formPj');
+  $('#dlgPjTitulo').textContent = pj ? 'Editar PJ' : 'Novo PJ';
+  f.nome.value = pj?.nome || ''; f.whatsapp.value = pj ? fone(pj.whatsapp) : ''; f.cidade.value = pj?.cidade || '';
+  f.valor.value = pj ? (S.inv[pj.id] ?? '') : ''; f.ativo.checked = pj ? pj.ativo : true;
+  d.returnValue = ''; d.showModal();
+  d.onclose = async () => {
+    if (d.returnValue !== 'ok') return;
+    const reg = { nome: f.nome.value.trim(), whatsapp: soNum(f.whatsapp.value), cidade: f.cidade.value.trim() || null, ativo: f.ativo.checked };
+    if (reg.whatsapp.length < 12) return toast('WhatsApp inválido: use DDD + número');
+    const r = pj ? await sb.from('pjs').update(reg).eq('id', pj.id).select().single() : await sb.from('pjs').insert(reg).select().single();
+    if (r.error) return toast('Erro: ' + r.error.message);
+    if (f.valor.value !== '') await sb.from('investimentos').upsert({ pj_id: r.data.id, mes: S.mes, valor: Number(f.valor.value) });
+    toast('PJ salvo'); carregar();
+  };
+}
+
+iniciar();
+</script>
+</body>
+</html>

@@ -32,6 +32,9 @@
   .tag { display:inline-block; padding:1px 7px; border-radius:5px; font-size:12px; font-weight:500; white-space:nowrap; }
   .t-enviado { background:var(--green-soft); color:var(--green); } .t-falhou, .t-sem_pj { background:var(--red-soft); color:var(--red); }
   .t-pendente { background:var(--amber-soft); color:var(--amber); } .t-teste { background:#eef0f6; color:#3e4c7a; } .t-fora_perfil { background:#f1f0ec; color:var(--mute); }
+  .cards.funil .v { font-size:20px; } .card .s { font-size:12px; color:var(--mute); margin-top:2px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; } @media (max-width:900px) { .grid2 { grid-template-columns:1fr; } }
+  select.com { padding:4px 6px; font-size:13px; }
   .pos { color:var(--green); } .neg { color:var(--red); }
   input, select, textarea { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
   .btn { font:inherit; padding:7px 12px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; white-space:nowrap; }
@@ -83,7 +86,15 @@ const dataHora = (d) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', mo
 const mesAtual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
 const toast = (m) => { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => (t.style.display = 'none'), 2600); };
 
-const S = { aba: 'visao', mes: mesAtual(), cotas: [], leads: [], pjs: [], inv: {}, filtro: { pj: '', status: '', busca: '', testes: false } };
+const COM = [['novo', 'Novo'], ['contatado', 'Contatado'], ['sem_contato', 'Sem contato'], ['proposta', 'Proposta digitada'], ['pago', 'Pago'], ['perdido', 'Perdido']];
+const COM_NOME = Object.fromEntries(COM);
+const AVANCOU = { contatado: 1, proposta: 2, pago: 3 }; // etapas do funil (perdido/sem_contato não avançam)
+const nomeCidade = (c) => String(c || '').trim().toLowerCase().replace(/(^|\s)\S/g, (x) => x.toUpperCase()) || 'Sem cidade';
+const funil = (ls) => ({ leads: ls.length, contatados: ls.filter((l) => AVANCOU[l.status_comercial] >= 1).length, propostas: ls.filter((l) => AVANCOU[l.status_comercial] >= 2).length,
+  pagos: ls.filter((l) => l.status_comercial === 'pago').length, liberado: ls.reduce((s, l) => s + (l.status_comercial === 'pago' ? Number(l.valor_liberado || 0) : 0), 0) });
+const taxa = (a, b) => (b ? pct(a / b) : '—');
+
+const S = { aba: 'visao', mes: mesAtual(), cotas: [], leads: [], pjs: [], inv: {}, gastos: [], filtro: { pj: '', status: '', com: '', busca: '', testes: false } };
 
 async function iniciar() {
   if (!cfg.url || !cfg.anonKey) { $('#app').innerHTML = '<div class="login"><h1>Configuração faltando</h1><p class="mute">Preencha o arquivo config.js com a URL e a chave pública do Supabase.</p></div>'; return; }
@@ -107,16 +118,18 @@ function telaLogin(msg = '') {
 
 async function carregar() {
   const fim = new Date(S.mes + 'T00:00:00'); fim.setMonth(fim.getMonth() + 1);
-  const [c, l, p, i] = await Promise.all([
+  const [c, l, p, i, g] = await Promise.all([
     sb.rpc('cotas_mes', { p_mes: S.mes }),
     sb.from('leads').select('*').gte('criado_em', new Date(S.mes + 'T00:00:00').toISOString()).lt('criado_em', fim.toISOString()).order('criado_em', { ascending: false }).limit(5000),
     sb.from('pjs').select('*').order('nome'),
     sb.from('investimentos').select('*').eq('mes', S.mes),
+    sb.from('gasto_diario').select('*').gte('dia', S.mes).lt('dia', fim.toISOString().slice(0, 10)).order('dia'),
   ]);
   const erro = c.error || l.error || p.error || i.error;
   if (erro) { $('#app').innerHTML = `<div class="login"><h1>Sem acesso</h1><p class="mute">${esc(erro.message)}</p><p class="small mute">Se você acabou de entrar, peça para incluir o seu e-mail na equipe do painel.</p><button class="btn" onclick="sb.auth.signOut()">Sair</button></div>`; return; }
   S.cotas = c.data || []; S.leads = l.data || []; S.pjs = p.data || [];
   S.inv = Object.fromEntries((i.data || []).map((x) => [x.pj_id, Number(x.valor)]));
+  S.gastos = g.error ? null : g.data || []; // null = migração 003 ainda não rodou
   render();
 }
 
@@ -127,7 +140,7 @@ function render() {
   $('#app').innerHTML = `
     <header>
       <h1>Painel de Leads</h1>
-      <nav>${[['visao', 'Visão geral'], ['leads', 'Leads'], ['pjs', 'PJs']].map(([k, t]) => `<button data-aba="${k}" class="${S.aba === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
+      <nav>${[['visao', 'Visão geral'], ['leads', 'Leads'], ['pjs', 'PJs'], ['gasto', 'Gasto em anúncios']].map(([k, t]) => `<button data-aba="${k}" class="${S.aba === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
       <span class="grow"></span>
       <select id="selMes">${meses.map((m) => `<option value="${m}" ${m === S.mes ? 'selected' : ''}>${nomeMes(m)}</option>`).join('')}</select>
       <button class="btn" id="btnSair">Sair</button>
@@ -136,7 +149,7 @@ function render() {
   document.querySelectorAll('nav button').forEach((b) => (b.onclick = () => { S.aba = b.dataset.aba; render(); }));
   $('#selMes').onchange = (e) => { S.mes = e.target.value; carregar(); };
   $('#btnSair').onclick = () => sb.auth.signOut();
-  ({ visao: renderVisao, leads: renderLeads, pjs: renderPjs })[S.aba]();
+  ({ visao: renderVisao, leads: renderLeads, pjs: renderPjs, gasto: renderGasto })[S.aba]();
 }
 
 function renderVisao() {
@@ -147,14 +160,30 @@ function renderVisao() {
   const enviados = reais.filter((l) => l.entrega_status === 'enviado').length;
   const problemas = reais.filter((l) => ['falhou', 'sem_pj'].includes(l.entrega_status)).length;
   const comVerba = S.cotas.filter((c) => Number(c.investimento) > 0);
+  const gasto = (S.gastos || []).reduce((s, x) => s + Number(x.valor), 0);
+  const fz = funil(reais);
+  const nomePj = Object.fromEntries(S.pjs.map((p) => [p.id, p.nome]));
+  const porCidade = Object.values(todos.reduce((acc, l) => { const k = nomeCidade(l.cidade); (acc[k] ||= { cidade: k, ls: [] }).ls.push(l); return acc; }, {}))
+    .map((x) => ({ cidade: x.cidade, total: x.ls.length, fora: x.ls.filter((l) => l.entrega_status === 'fora_perfil').length, ...funil(x.ls.filter((l) => l.entrega_status !== 'fora_perfil')) }))
+    .sort((a, b) => b.total - a.total);
+  const porPj = Object.values(reais.filter((l) => l.pj_id).reduce((acc, l) => { (acc[l.pj_id] ||= []).push(l); return acc; }, {}))
+    .map((ls) => ({ nome: nomePj[ls[0].pj_id] || '—', ...funil(ls) })).sort((a, b) => b.leads - a.leads);
   $('#conteudo').innerHTML = `
     <div class="cards">
       <div class="card"><div class="k">Leads no perfil</div><div class="v">${reais.length}</div></div>
-      <div class="card"><div class="k">Fora do perfil (não distribuídos)</div><div class="v">${fora}</div></div>
+      <div class="card"><div class="k">Fora do perfil (não distribuídos)</div><div class="v">${fora}</div><div class="s">${taxa(fora, todos.length)} do total</div></div>
       <div class="card"><div class="k">Entregues aos PJs</div><div class="v">${enviados}</div></div>
       <div class="card"><div class="k">Com problema na entrega</div><div class="v ${problemas ? 'neg' : ''}">${problemas}</div></div>
-      <div class="card"><div class="k">Investimento do mês</div><div class="v">${brl(invTotal)}</div></div>
-      <div class="card"><div class="k">Custo por lead no perfil</div><div class="v">${reais.length ? brl(invTotal / reais.length) : '—'}</div></div>
+      <div class="card"><div class="k">Gasto em anúncios</div><div class="v">${S.gastos === null ? '—' : brl(gasto)}</div><div class="s">verba prevista ${brl(invTotal)}</div></div>
+      <div class="card"><div class="k">CPL (custo por lead no perfil)</div><div class="v">${gasto && reais.length ? brl(gasto / reais.length) : '—'}</div><div class="s">${gasto ? `custo por lead total ${todos.length ? brl(gasto / todos.length) : '—'}` : 'lance o gasto na aba “Gasto em anúncios”'}</div></div>
+    </div>
+    <div class="cards funil">
+      <div class="card"><div class="k">Contatados</div><div class="v">${fz.contatados}</div><div class="s">${taxa(fz.contatados, fz.leads)} dos leads</div></div>
+      <div class="card"><div class="k">Propostas digitadas</div><div class="v">${fz.propostas}</div><div class="s">${taxa(fz.propostas, fz.leads)} dos leads</div></div>
+      <div class="card"><div class="k">Pagos</div><div class="v">${fz.pagos}</div><div class="s">${taxa(fz.pagos, fz.leads)} dos leads</div></div>
+      <div class="card"><div class="k">Valor liberado</div><div class="v">${brl(fz.liberado)}</div></div>
+      <div class="card"><div class="k">Custo por proposta</div><div class="v">${gasto && fz.propostas ? brl(gasto / fz.propostas) : '—'}</div></div>
+      <div class="card"><div class="k">Custo por pago</div><div class="v">${gasto && fz.pagos ? brl(gasto / fz.pagos) : '—'}</div></div>
     </div>
     <div class="box">
       <h2>Divisão por PJ <span class="mute small" style="font-weight:400">· cota = investimento do PJ ÷ investimento total · traço = quanto deveria ter recebido até agora</span></h2>
@@ -168,19 +197,32 @@ function renderVisao() {
           <td class="hide-sm"><div class="bar"><i style="width:${(100 * c.recebidos) / max}%"></i><b style="left:${(100 * c.esperado) / max}%"></b></div></td></tr>`; }).join('')}
       </table>` : '<div class="empty">Nenhum PJ com investimento neste mês. Cadastre os PJs e o investimento na aba “PJs”.</div>'}
     </div>
-    <p class="small mute">A diferença fica sempre perto de zero: cada lead novo vai para o PJ que está mais atrás da própria cota. Leads de teste não entram na conta.</p>`;
+    <div class="grid2">
+      <div class="box"><h2>Leads por cidade</h2>
+        ${porCidade.length ? `<table><tr><th>Cidade</th><th class="num">Leads</th><th class="num">Fora do perfil</th><th class="num">Propostas</th><th class="num">Pagos</th></tr>
+        ${porCidade.map((x) => `<tr><td>${esc(x.cidade)}</td><td class="num">${x.total}</td><td class="num">${x.fora} <span class="mute small">${taxa(x.fora, x.total)}</span></td><td class="num">${x.propostas}</td><td class="num">${x.pagos}</td></tr>`).join('')}</table>`
+        : '<div class="empty">Sem leads no mês.</div>'}
+      </div>
+      <div class="box"><h2>Resultado por PJ</h2>
+        ${porPj.length ? `<table><tr><th>PJ</th><th class="num">Leads</th><th class="num">Contatados</th><th class="num">Propostas</th><th class="num">Pagos</th><th class="num">Conversão</th></tr>
+        ${porPj.map((x) => `<tr><td>${esc(x.nome)}</td><td class="num">${x.leads}</td><td class="num">${x.contatados}</td><td class="num">${x.propostas}</td><td class="num">${x.pagos}</td><td class="num">${taxa(x.pagos, x.leads)}</td></tr>`).join('')}</table>`
+        : '<div class="empty">Nenhum lead distribuído no mês.</div>'}
+      </div>
+    </div>
+    <p class="small mute">A diferença fica sempre perto de zero: cada lead novo vai para o PJ que está mais atrás da própria cota. Leads de teste não entram na conta. O funil comercial vem do status que a equipe marca em cada lead na aba “Leads”.</p>`;
 }
 
 function renderLeads() {
   const f = S.filtro;
   const nomePj = Object.fromEntries(S.pjs.map((p) => [p.id, p.nome]));
-  const lista = S.leads.filter((l) => (f.testes || l.origem !== 'teste') && (!f.pj || l.pj_id === f.pj) && (!f.status || l.entrega_status === f.status) &&
+  const lista = S.leads.filter((l) => (f.testes || l.origem !== 'teste') && (!f.pj || l.pj_id === f.pj) && (!f.status || l.entrega_status === f.status) && (!f.com || l.status_comercial === f.com) &&
     (!f.busca || `${l.nome} ${l.telefone} ${l.cidade} ${l.produto}`.toLowerCase().includes(f.busca.toLowerCase())));
   $('#conteudo').innerHTML = `
     <div class="row">
       <input id="fBusca" placeholder="Buscar nome, telefone, cidade" value="${esc(f.busca)}" style="min-width:220px">
       <select id="fPj"><option value="">Todos os PJs</option>${S.pjs.map((p) => `<option value="${p.id}" ${f.pj === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
       <select id="fStatus"><option value="">Todos os status</option>${[['enviado', 'Entregue'], ['pendente', 'Pendente'], ['falhou', 'Falhou'], ['sem_pj', 'Sem PJ'], ['fora_perfil', 'Fora do perfil']].map(([k, t]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <select id="fCom"><option value="">Todo status comercial</option>${COM.map(([k, t]) => `<option value="${k}" ${f.com === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
       <label class="small mute"><input type="checkbox" id="fTestes" ${f.testes ? 'checked' : ''}> Mostrar testes</label>
       <span class="grow"></span>
       <button class="btn" id="btnTeste">Simular lead de teste</button>
@@ -188,13 +230,15 @@ function renderLeads() {
     </div>
     <div class="box">
       ${lista.length ? `<table>
-        <tr><th>Quando</th><th>Lead</th><th class="hide-sm">Produto / cidade</th><th>PJ</th><th>Entrega</th></tr>
+        <tr><th>Quando</th><th>Lead</th><th class="hide-sm">Produto / cidade</th><th>PJ</th><th>Entrega</th><th>Comercial</th></tr>
         ${lista.map((l) => `<tr>
           <td class="small">${dataHora(l.criado_em)}</td>
           <td>${esc(l.nome || '—')}<div class="small mute">${l.telefone ? `<a href="https://wa.me/${esc(l.telefone)}" target="_blank" rel="noopener">${esc(fone(l.telefone))}</a>` : ''}</div></td>
           <td class="hide-sm small">${esc(l.produto || '')}<div class="mute">${esc(l.cidade || '')}</div></td>
           <td><select data-lead="${l.id}" class="selPj"><option value="">—</option>${S.pjs.map((p) => `<option value="${p.id}" ${l.pj_id === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></td>
           <td>${l.origem === 'teste' ? '<span class="tag t-teste">teste</span> ' : ''}<span class="tag t-${l.entrega_status}" title="${esc(l.entrega_erro || l.motivo_fora_perfil || '')}">${{ enviado: 'Entregue', pendente: 'Pendente', falhou: 'Falhou', sem_pj: 'Sem PJ', fora_perfil: 'Fora do perfil' }[l.entrega_status]}</span></td>
+          <td>${l.entrega_status === 'fora_perfil' ? '<span class="mute small">—</span>' : `<select class="com selCom" data-lead="${l.id}">${COM.map(([k, t]) => `<option value="${k}" ${(l.status_comercial || 'novo') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            ${l.status_comercial === 'pago' ? `<div><input type="number" min="0" step="0.01" class="inpLib" data-lead="${l.id}" value="${l.valor_liberado ?? ''}" placeholder="valor liberado" style="width:130px;margin-top:4px;padding:4px 6px;font-size:13px"></div>` : ''}`}</td>
         </tr>`).join('')}
       </table>` : '<div class="empty">Nenhum lead neste filtro.</div>'}
     </div>
@@ -203,6 +247,20 @@ function renderLeads() {
   $('#fPj').onchange = (e) => { f.pj = e.target.value; renderLeads(); };
   $('#fStatus').onchange = (e) => { f.status = e.target.value; renderLeads(); };
   $('#fTestes').onchange = (e) => { f.testes = e.target.checked; renderLeads(); };
+  $('#fCom').onchange = (e) => { f.com = e.target.value; renderLeads(); };
+  document.querySelectorAll('.selCom').forEach((s) => (s.onchange = async () => {
+    const { error } = await sb.from('leads').update({ status_comercial: s.value }).eq('id', s.dataset.lead);
+    if (error) return toast(/status_comercial/.test(error.message) ? 'Rode a migração 003 no Supabase' : 'Erro: ' + error.message);
+    const l = S.leads.find((x) => x.id === s.dataset.lead); if (l) l.status_comercial = s.value;
+    toast('Status: ' + COM_NOME[s.value]); renderLeads();
+  }));
+  document.querySelectorAll('.inpLib').forEach((i) => (i.onchange = async () => {
+    const v = i.value === '' ? null : Number(i.value);
+    const { error } = await sb.from('leads').update({ valor_liberado: v }).eq('id', i.dataset.lead);
+    if (error) return toast('Erro: ' + error.message);
+    const l = S.leads.find((x) => x.id === i.dataset.lead); if (l) l.valor_liberado = v;
+    toast('Valor salvo');
+  }));
   $('#btnCsv').onclick = () => exportarCsv(lista, nomePj);
   $('#btnTeste').onclick = simularTeste;
   document.querySelectorAll('.selPj').forEach((s) => (s.onchange = async () => {
@@ -224,8 +282,8 @@ async function simularTeste() {
 }
 
 function exportarCsv(lista, nomePj) {
-  const linhas = [['data', 'nome', 'telefone', 'email', 'produto', 'cidade', 'pj', 'entrega', 'motivo fora do perfil', 'campanha', 'anuncio']]
-    .concat(lista.map((l) => [new Date(l.criado_em).toLocaleString('pt-BR'), l.nome, l.telefone, l.email, l.produto, l.cidade, nomePj[l.pj_id] || '', l.entrega_status, l.motivo_fora_perfil, l.campanha, l.anuncio]));
+  const linhas = [['data', 'nome', 'telefone', 'email', 'produto', 'cidade', 'pj', 'entrega', 'motivo fora do perfil', 'status comercial', 'valor liberado', 'campanha', 'anuncio']]
+    .concat(lista.map((l) => [new Date(l.criado_em).toLocaleString('pt-BR'), l.nome, l.telefone, l.email, l.produto, l.cidade, nomePj[l.pj_id] || '', l.entrega_status, l.motivo_fora_perfil, COM_NOME[l.status_comercial] || '', l.valor_liberado ?? '', l.campanha, l.anuncio]));
   const csv = linhas.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
@@ -256,6 +314,31 @@ function renderPjs() {
     const { error } = await sb.from('investimentos').upsert({ pj_id: i.dataset.pj, mes: S.mes, valor: v });
     if (error) return toast('Erro: ' + error.message);
     toast('Investimento salvo'); carregar();
+  }));
+}
+
+function renderGasto() {
+  if (S.gastos === null) { $('#conteudo').innerHTML = '<div class="empty">Falta rodar a migração 003 (supabase/003_comercial.sql) no Supabase.</div>'; return; }
+  const ini = new Date(S.mes + 'T12:00:00'); const hoje = new Date(); const dias = [];
+  for (let d = new Date(ini); d.getMonth() === ini.getMonth() && d <= hoje; d.setDate(d.getDate() + 1)) dias.push(d.toISOString().slice(0, 10));
+  dias.reverse();
+  const por = Object.fromEntries(S.gastos.map((x) => [x.dia, x]));
+  const reais = S.leads.filter((l) => l.origem !== 'teste');
+  const leadsDia = (dia) => reais.filter((l) => new Date(l.criado_em).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) === dia);
+  const total = S.gastos.reduce((s, x) => s + Number(x.valor), 0);
+  $('#conteudo').innerHTML = `
+    <div class="row"><span class="mute small">Gasto do mês: <b>${brl(total)}</b> · lance o valor gasto em cada dia (Gerenciador de Anúncios → coluna “Valor usado”).</span></div>
+    <div class="box">${dias.length ? `<table>
+      <tr><th>Dia</th><th class="num">Gasto (R$)</th><th class="num">Leads</th><th class="num">No perfil</th><th class="num">CPL no perfil</th><th>Fonte</th></tr>
+      ${dias.map((dia) => { const g = por[dia]; const ls = leadsDia(dia); const ok = ls.filter((l) => l.entrega_status !== 'fora_perfil').length; const v = Number(g?.valor || 0);
+        return `<tr><td>${new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</td>
+        <td class="num"><input type="number" min="0" step="0.01" class="inpGasto" data-dia="${dia}" value="${g ? g.valor : ''}" placeholder="0,00" style="width:110px;text-align:right"></td>
+        <td class="num">${ls.length}</td><td class="num">${ok}</td><td class="num">${v && ok ? brl(v / ok) : '—'}</td><td class="small mute">${g ? (g.fonte === 'meta' ? 'Meta (automático)' : 'manual') : ''}</td></tr>`; }).join('')}
+    </table>` : '<div class="empty">Mês ainda não começou.</div>'}</div>`;
+  document.querySelectorAll('.inpGasto').forEach((i) => (i.onchange = async () => {
+    const { error } = await sb.from('gasto_diario').upsert({ dia: i.dataset.dia, valor: i.value === '' ? 0 : Number(i.value), fonte: 'manual', atualizado_em: new Date().toISOString() });
+    if (error) return toast('Erro: ' + error.message);
+    toast('Gasto salvo'); carregar();
   }));
 }
 

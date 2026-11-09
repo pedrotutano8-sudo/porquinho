@@ -1,0 +1,10 @@
+import { PGlite } from '@electric-sql/pglite'; import fs from 'fs';
+const db = new PGlite();
+await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth; create function auth.jwt() returns jsonb language sql as $$ select '{}'::jsonb $$; create function auth.uid() returns uuid language sql as $$ select null::uuid $$;`);
+await db.exec(fs.readFileSync('supabase/schema.sql','utf8')); await db.exec(fs.readFileSync('supabase/002_qualificacao.sql','utf8'));
+const mes = new Date().toISOString().slice(0,7)+'-01';
+await db.exec(`insert into pjs (id,nome,whatsapp) values ('00000000-0000-0000-0000-000000000001','Ana','5519900000001'); insert into investimentos values ('00000000-0000-0000-0000-000000000001','${mes}',500);`);
+const a = await db.query(`select * from receber_lead('Ok','19991112222', p_meta_lead_id => 'x1')`);
+const b = await db.query(`select * from receber_lead('Fora','19991113333', p_meta_lead_id => 'x2', p_qualificado => false, p_motivo_fora_perfil => 'conta não está no nome')`);
+const c = await db.query(`select nome, entrega_status, pj_id is not null as tem_pj from leads order by nome`);
+console.log(a.rows[0].motivo, b.rows[0].motivo, JSON.stringify(c.rows));

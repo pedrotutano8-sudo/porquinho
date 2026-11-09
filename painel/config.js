@@ -1,6 +1,6 @@
-// Preencha com os dados do Supabase do projeto (Project Settings › API).
-// A chave pública (anon / publishable) pode ficar aqui: o acesso é protegido pelas regras do banco.
+// Supabase do projeto Porquinho (Project Settings › Data API).
+// A chave pública (publishable) pode ficar aqui: o acesso é protegido pelas regras do banco.
 window.PORQUINHO = {
-  url: '',
-  anonKey: '',
+  url: 'https://eznmpqgtbrymmedjmnga.supabase.co',
+  anonKey: 'sb_publishable_NnfIRcHVMey1YTGT2vUEeg_O2_0uXMU',
 };

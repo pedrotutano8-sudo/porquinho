@@ -31,7 +31,7 @@
   .bar b { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); }
   .tag { display:inline-block; padding:1px 7px; border-radius:5px; font-size:12px; font-weight:500; white-space:nowrap; }
   .t-enviado { background:var(--green-soft); color:var(--green); } .t-falhou, .t-sem_pj { background:var(--red-soft); color:var(--red); }
-  .t-pendente { background:var(--amber-soft); color:var(--amber); } .t-teste { background:#eef0f6; color:#3e4c7a; }
+  .t-pendente { background:var(--amber-soft); color:var(--amber); } .t-teste { background:#eef0f6; color:#3e4c7a; } .t-fora_perfil { background:#f1f0ec; color:var(--mute); }
   .pos { color:var(--green); } .neg { color:var(--red); }
   input, select, textarea { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink); }
   .btn { font:inherit; padding:7px 12px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; white-space:nowrap; }
@@ -93,14 +93,15 @@ async function iniciar() {
 }
 
 function telaLogin(msg = '') {
-  $('#app').innerHTML = `<div class="login"><h1>Painel de Leads</h1><p class="mute small">Entre com o seu e-mail. Você recebe um link de acesso.</p>
-    <form id="fLogin"><input type="email" name="email" placeholder="seu@email.com" required><button class="btn pri">Receber link</button></form>
+  $('#app').innerHTML = `<div class="login"><h1>Painel de Leads</h1><p class="mute small">Entre com o e-mail e a senha que você recebeu.</p>
+    <form id="fLogin"><input type="email" name="email" placeholder="seu@email.com" required autocomplete="username" style="margin-bottom:0">
+    <input type="password" name="senha" placeholder="Senha" required autocomplete="current-password"><button class="btn pri">Entrar</button></form>
     <p class="small mute" id="msgLogin">${esc(msg)}</p></div>`;
   $('#fLogin').onsubmit = async (e) => {
     e.preventDefault();
-    const email = e.target.email.value.trim();
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0] } });
-    $('#msgLogin').textContent = error ? 'Não consegui enviar: ' + error.message : 'Pronto! Abra o link que chegou no seu e-mail.';
+    $('#msgLogin').textContent = 'Entrando…';
+    const { error } = await sb.auth.signInWithPassword({ email: e.target.email.value.trim(), password: e.target.senha.value });
+    $('#msgLogin').textContent = error ? 'E-mail ou senha inválidos.' : '';
   };
 }
 
@@ -139,18 +140,21 @@ function render() {
 }
 
 function renderVisao() {
-  const reais = S.leads.filter((l) => l.origem !== 'teste');
+  const todos = S.leads.filter((l) => l.origem !== 'teste');
+  const fora = todos.filter((l) => l.entrega_status === 'fora_perfil').length;
+  const reais = todos.filter((l) => l.entrega_status !== 'fora_perfil');
   const invTotal = S.cotas.reduce((s, c) => s + Number(c.investimento), 0);
   const enviados = reais.filter((l) => l.entrega_status === 'enviado').length;
   const problemas = reais.filter((l) => ['falhou', 'sem_pj'].includes(l.entrega_status)).length;
   const comVerba = S.cotas.filter((c) => Number(c.investimento) > 0);
   $('#conteudo').innerHTML = `
     <div class="cards">
-      <div class="card"><div class="k">Leads no mês</div><div class="v">${reais.length}</div></div>
+      <div class="card"><div class="k">Leads no perfil</div><div class="v">${reais.length}</div></div>
+      <div class="card"><div class="k">Fora do perfil (não distribuídos)</div><div class="v">${fora}</div></div>
       <div class="card"><div class="k">Entregues aos PJs</div><div class="v">${enviados}</div></div>
       <div class="card"><div class="k">Com problema na entrega</div><div class="v ${problemas ? 'neg' : ''}">${problemas}</div></div>
       <div class="card"><div class="k">Investimento do mês</div><div class="v">${brl(invTotal)}</div></div>
-      <div class="card"><div class="k">Custo por lead (verba ÷ leads)</div><div class="v">${reais.length ? brl(invTotal / reais.length) : '—'}</div></div>
+      <div class="card"><div class="k">Custo por lead no perfil</div><div class="v">${reais.length ? brl(invTotal / reais.length) : '—'}</div></div>
     </div>
     <div class="box">
       <h2>Divisão por PJ <span class="mute small" style="font-weight:400">· cota = investimento do PJ ÷ investimento total · traço = quanto deveria ter recebido até agora</span></h2>
@@ -176,7 +180,7 @@ function renderLeads() {
     <div class="row">
       <input id="fBusca" placeholder="Buscar nome, telefone, cidade" value="${esc(f.busca)}" style="min-width:220px">
       <select id="fPj"><option value="">Todos os PJs</option>${S.pjs.map((p) => `<option value="${p.id}" ${f.pj === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
-      <select id="fStatus"><option value="">Todos os status</option>${[['enviado', 'Entregue'], ['pendente', 'Pendente'], ['falhou', 'Falhou'], ['sem_pj', 'Sem PJ']].map(([k, t]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <select id="fStatus"><option value="">Todos os status</option>${[['enviado', 'Entregue'], ['pendente', 'Pendente'], ['falhou', 'Falhou'], ['sem_pj', 'Sem PJ'], ['fora_perfil', 'Fora do perfil']].map(([k, t]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
       <label class="small mute"><input type="checkbox" id="fTestes" ${f.testes ? 'checked' : ''}> Mostrar testes</label>
       <span class="grow"></span>
       <button class="btn" id="btnTeste">Simular lead de teste</button>
@@ -190,7 +194,7 @@ function renderLeads() {
           <td>${esc(l.nome || '—')}<div class="small mute">${l.telefone ? `<a href="https://wa.me/${esc(l.telefone)}" target="_blank" rel="noopener">${esc(fone(l.telefone))}</a>` : ''}</div></td>
           <td class="hide-sm small">${esc(l.produto || '')}<div class="mute">${esc(l.cidade || '')}</div></td>
           <td><select data-lead="${l.id}" class="selPj"><option value="">—</option>${S.pjs.map((p) => `<option value="${p.id}" ${l.pj_id === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select></td>
-          <td>${l.origem === 'teste' ? '<span class="tag t-teste">teste</span> ' : ''}<span class="tag t-${l.entrega_status}" title="${esc(l.entrega_erro || '')}">${{ enviado: 'Entregue', pendente: 'Pendente', falhou: 'Falhou', sem_pj: 'Sem PJ' }[l.entrega_status]}</span></td>
+          <td>${l.origem === 'teste' ? '<span class="tag t-teste">teste</span> ' : ''}<span class="tag t-${l.entrega_status}" title="${esc(l.entrega_erro || l.motivo_fora_perfil || '')}">${{ enviado: 'Entregue', pendente: 'Pendente', falhou: 'Falhou', sem_pj: 'Sem PJ', fora_perfil: 'Fora do perfil' }[l.entrega_status]}</span></td>
         </tr>`).join('')}
       </table>` : '<div class="empty">Nenhum lead neste filtro.</div>'}
     </div>
@@ -220,8 +224,8 @@ async function simularTeste() {
 }
 
 function exportarCsv(lista, nomePj) {
-  const linhas = [['data', 'nome', 'telefone', 'email', 'produto', 'cidade', 'pj', 'entrega', 'campanha', 'anuncio']]
-    .concat(lista.map((l) => [new Date(l.criado_em).toLocaleString('pt-BR'), l.nome, l.telefone, l.email, l.produto, l.cidade, nomePj[l.pj_id] || '', l.entrega_status, l.campanha, l.anuncio]));
+  const linhas = [['data', 'nome', 'telefone', 'email', 'produto', 'cidade', 'pj', 'entrega', 'motivo fora do perfil', 'campanha', 'anuncio']]
+    .concat(lista.map((l) => [new Date(l.criado_em).toLocaleString('pt-BR'), l.nome, l.telefone, l.email, l.produto, l.cidade, nomePj[l.pj_id] || '', l.entrega_status, l.motivo_fora_perfil, l.campanha, l.anuncio]));
   const csv = linhas.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));

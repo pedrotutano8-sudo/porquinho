@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>
+:root { --navy:#0b1f3a; --navy2:#13305a; --amarelo:#ffd23f; --branco:#fff; --verde:#22c55e; --cinza:#e8ecf2; }
+* { box-sizing:border-box; margin:0; }
+body { font-family:'Inter Display','Inter',sans-serif; background:#333; }
+.peca { width:1080px; height:1350px; position:relative; overflow:hidden; background:radial-gradient(120% 80% at 80% 0%, var(--navy2), var(--navy) 60%); color:var(--branco); padding:96px 88px; display:flex; flex-direction:column; }
+.peca.story { height:1920px; padding:230px 88px 300px; }
+.selo { align-self:flex-start; background:var(--amarelo); color:var(--navy); font-weight:900; font-size:34px; padding:14px 26px; border-radius:999px; letter-spacing:.5px; }
+h1 { font-weight:900; font-size:112px; line-height:1.0; letter-spacing:-2px; margin-top:44px; }
+h1 em { font-style:normal; color:var(--amarelo); }
+.sub { font-size:44px; line-height:1.25; font-weight:500; margin-top:34px; color:#d6deea; } .sub b { color:#fff; font-weight:800; }
+.cta { background:var(--amarelo); color:var(--navy); font-weight:900; font-size:44px; padding:34px 40px; border-radius:26px; display:flex; align-items:center; justify-content:space-between; }
+.cta span:last-child { font-size:56px; }
+.rodape { font-size:24px; color:#9fb0c8; margin-top:22px; text-align:center; }
+/* raio */
+.raio { position:absolute; right:-60px; bottom:330px; width:380px; height:380px; opacity:.10; }
+.story .raio { bottom:520px; width:460px; height:460px; }
+.story h1 { font-size:128px; } .story .sub { font-size:50px; } .story .item { font-size:52px; padding:34px 36px; } .story .bolha { font-size:46px; } .story .fatura { margin-top:70px; }
+.selo svg { width:26px; height:26px; vertical-align:-4px; margin-right:6px; }
+.lamp { margin:auto auto 90px; width:400px; position:relative; } .story .lamp { width:560px; }
+.lamp .card { position:absolute; left:50%; bottom:-10px; transform:translateX(-50%) rotate(-3deg); background:#fff; color:var(--navy); font-weight:900; font-size:40px; padding:18px 30px; border-radius:18px; white-space:nowrap; box-shadow:0 20px 50px rgba(0,0,0,.35); }
+.lamp .card small { display:block; font-size:24px; color:#5a6578; font-weight:700; }
+.exemplo-fora { align-self:flex-end; margin-top:30px; margin-bottom:-30px; background:#e11d48; color:#fff; font-size:24px; font-weight:800; padding:8px 16px; border-radius:10px; }
+/* checklist */
+.lista { margin-top:46px; display:flex; flex-direction:column; gap:26px; }
+.item { display:flex; align-items:center; gap:28px; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.12); border-radius:24px; padding:28px 32px; font-size:46px; font-weight:700; }
+.ok { width:72px; height:72px; border-radius:50%; background:var(--verde); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ok svg { width:42px; }
+/* fatura */
+.fatura { margin-top:46px; background:#fff; color:#1b2433; border-radius:28px; padding:40px 44px; box-shadow:0 30px 80px rgba(0,0,0,.35); transform:rotate(-2deg); }
+.fatura .topo { display:flex; justify-content:space-between; align-items:center; font-size:30px; color:#5a6578; font-weight:600; border-bottom:3px dashed var(--cinza); padding-bottom:22px; }
+.fatura .topo b { color:#1b2433; font-size:36px; }
+.linha { display:flex; justify-content:space-between; font-size:36px; padding:20px 0; border-bottom:2px solid var(--cinza); }
+.linha.dest { background:#fff6d1; margin:0 -20px; padding:22px 20px; border-radius:14px; border:0; font-weight:800; }
+.linha.tot { border:0; font-weight:900; font-size:40px; }
+.exemplo { position:absolute; top:24px; right:24px; background:#e11d48; color:#fff; font-size:24px; font-weight:800; padding:8px 16px; border-radius:10px; }
+/* conversa */
+.chat { margin-top:50px; display:flex; flex-direction:column; gap:22px; }
+.bolha { max-width:82%; font-size:40px; line-height:1.25; padding:26px 32px; border-radius:30px; font-weight:600; }
+.bolha.eu { align-self:flex-end; background:#dcf8c6; color:#1b2433; border-bottom-right-radius:8px; }
+.bolha.ele { align-self:flex-start; background:#fff; color:#1b2433; border-bottom-left-radius:8px; }
+.bolha small { display:block; font-size:24px; color:#6b7686; margin-bottom:6px; font-weight:700; }
+</style></head><body>
+<div id="raiz"></div>
+<script>
+const P = new URLSearchParams(location.search), c = P.get('c') || 'A', story = P.get('f') === 'story';
+const bolt = `<svg viewBox="0 0 100 100"><path d="M58 4 18 56h26l-8 40 46-58H54z" fill="#0b1f3a"/></svg>`;
+const lamp = `<div class="lamp"><svg viewBox="0 0 200 230"><defs><radialGradient id="g" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#fff3b0"/><stop offset="1" stop-color="#ffd23f"/></radialGradient></defs><circle cx="100" cy="88" r="84" fill="#ffd23f" opacity=".18"/><path d="M100 20a62 62 0 0 0-36 112c8 6 12 14 12 24h48c0-10 4-18 12-24a62 62 0 0 0-36-112z" fill="url(#g)"/><rect x="74" y="162" width="52" height="14" rx="5" fill="#c9d3e2"/><rect x="78" y="180" width="44" height="14" rx="5" fill="#aab7cb"/><path d="M106 52 82 94h18l-6 34 28-46h-18z" fill="#0b1f3a"/></svg><div class="card"><small>na sua fatura da CPFL</small>+ parcela do empréstimo</div></div>`;
+const raio = `<svg class="raio" viewBox="0 0 100 100"><path d="M58 4 18 56h26l-8 40 46-58H54z" fill="#ffd23f"/></svg>`;
+const check = `<div class="ok"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+const cta = (t = 'Toque em Saiba mais') => `<div class="cta" style="margin-top:auto"><span>${t}</span><span>→</span></div><div class="rodape">Simulação gratuita. Crédito sujeito a análise.</div>`;
+const T = {
+  A: `<div class="selo">${bolt}SIMULAÇÃO GRATUITA</div>
+      <h1>Empréstimo na <em>conta de luz</em></h1>
+      <p class="sub">As parcelas vêm <b>junto com a sua fatura da CPFL</b>. Veja se está disponível na sua cidade.</p>${lamp}${cta()}`,
+  B: `${raio}<div class="selo">VEJA SE VOCÊ TEM CRÉDITO</div>
+      <h1>Sua conta de luz está <em>no seu nome?</em></h1>
+      <div class="lista"><div class="item">${check}Conta da CPFL no seu nome</div><div class="item">${check}CPF em mãos</div><div class="item">${check}Morar numa cidade atendida</div></div>${cta('Simule agora, é grátis')}`,
+  C: `<div class="selo">COMO FUNCIONA</div>
+      <h1>A parcela vem <em>na fatura</em></h1>
+      <div class="exemplo-fora">EXEMPLO · trocar pela simulação da Crefaz</div><div class="fatura">
+        <div class="topo"><span>Fatura de energia</span><b>CPFL</b></div>
+        <div class="linha"><span>Consumo do mês</span><span>R$ 148,90</span></div>
+        <div class="linha dest"><span>Parcela do empréstimo</span><span>R$ 89,90</span></div>
+        <div class="linha tot"><span>Total</span><span>R$ 238,80</span></div></div>
+      <p class="sub" style="margin-top:44px">Sem boleto extra: <b>você paga tudo numa conta só.</b></p>${cta()}`,
+  D: `${raio}<div class="selo">ATENDIMENTO PELO WHATSAPP</div>
+      <h1>Um consultor <em>da sua região</em> te chama</h1>
+      <div class="chat"><div class="bolha eu">Quero saber do empréstimo na conta de luz</div>
+        <div class="bolha ele"><small>Consultor</small>Oi! Já vou fazer a sua simulação. Qual o valor que você precisa?</div></div>${cta('Peça sua simulação')}`,
+};
+document.getElementById('raiz').innerHTML = `<div class="peca ${story ? 'story' : ''}">${T[c]}</div>`;
+</script></body></html>

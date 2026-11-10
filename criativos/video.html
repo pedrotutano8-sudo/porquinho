@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>
+:root { --navy:#0b1f3a; --navy2:#13305a; --amarelo:#ffd23f; --verde:#22c55e; --vermelho:#e11d48; --cinza:#e8ecf2; }
+* { box-sizing:border-box; margin:0; }
+body { font-family:'Inter Display','Inter',sans-serif; width:1080px; height:1920px; overflow:hidden; background:radial-gradient(120% 80% at 80% 0%, var(--navy2), var(--navy) 60%); color:#fff; }
+.cena { position:absolute; inset:0; padding:270px 84px 430px; display:flex; flex-direction:column; opacity:0; }
+.selo { align-self:flex-start; background:var(--amarelo); color:var(--navy); font-weight:900; font-size:38px; padding:16px 30px; border-radius:999px; letter-spacing:.5px; }
+h1 { font-weight:900; font-size:124px; line-height:1.0; letter-spacing:-2.5px; margin-top:48px; }
+h1 em { font-style:normal; color:var(--amarelo); }
+h1.g { font-size:150px; }
+.sub { font-size:54px; line-height:1.25; font-weight:500; margin-top:40px; color:#d6deea; } .sub b { color:#fff; font-weight:800; }
+.raio { position:absolute; right:-70px; bottom:520px; width:480px; opacity:.10; }
+.lista { margin-top:60px; display:flex; flex-direction:column; gap:30px; }
+.item { display:flex; align-items:center; gap:30px; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.14); border-radius:28px; padding:36px 38px; font-size:54px; font-weight:800; }
+.ok { width:84px; height:84px; border-radius:50%; background:var(--verde); display:flex; align-items:center; justify-content:center; flex-shrink:0; } .ok svg { width:50px; }
+.fatura { margin-top:70px; background:#fff; color:#1b2433; border-radius:32px; padding:46px 50px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+.fatura .topo { display:flex; justify-content:space-between; align-items:center; font-size:36px; color:#5a6578; font-weight:700; border-bottom:4px dashed var(--cinza); padding-bottom:26px; }
+.fatura .topo b { color:#1b2433; font-size:42px; }
+.linha { display:flex; justify-content:space-between; align-items:center; font-size:44px; padding:28px 0; border-bottom:3px solid var(--cinza); font-weight:600; }
+.linha i { display:block; width:150px; height:22px; border-radius:11px; background:var(--cinza); }
+.linha.dest { background:#fff3c2; margin:8px -24px; padding:30px 24px; border-radius:18px; border:0; font-weight:900; } .linha.dest i { background:var(--amarelo); }
+.linha.tot { border:0; font-weight:900; } .linha.tot i { background:#c5cedc; }
+.bolha { align-self:flex-start; max-width:86%; margin-top:70px; background:#fff; color:#1b2433; font-size:50px; line-height:1.25; padding:34px 40px; border-radius:36px; border-bottom-left-radius:10px; font-weight:700; }
+.bolha small { display:block; font-size:30px; color:#6b7686; margin-bottom:8px; }
+.carimbo { margin:160px auto 0; border:14px solid var(--vermelho); color:var(--vermelho); background:#fff; font-weight:900; font-size:190px; padding:20px 60px; border-radius:36px; letter-spacing:4px; }
+.cta { margin-top:70px; background:var(--amarelo); color:var(--navy); font-weight:900; font-size:56px; padding:44px 48px; border-radius:32px; display:flex; align-items:center; justify-content:space-between; }
+.cta span:last-child { font-size:72px; }
+.rodape { font-size:30px; color:#9fb0c8; margin-top:30px; text-align:center; }
+.lamp { width:440px; margin:70px auto 0; }
+</style></head><body><div id="raiz"></div>
+<script>
+const v = new URLSearchParams(location.search).get('v') || '1';
+const raio = `<svg class="raio" viewBox="0 0 100 100"><path d="M58 4 18 56h26l-8 40 46-58H54z" fill="#ffd23f"/></svg>`;
+const check = `<div class="ok"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+const lamp = `<svg class="lamp" viewBox="0 0 200 200"><circle cx="100" cy="88" r="86" fill="#ffd23f" opacity=".16"/><path d="M100 20a62 62 0 0 0-36 112c8 6 12 14 12 24h48c0-10 4-18 12-24a62 62 0 0 0-36-112z" fill="#ffd23f"/><rect x="74" y="162" width="52" height="14" rx="5" fill="#c9d3e2"/><rect x="78" y="180" width="44" height="14" rx="5" fill="#aab7cb"/><path d="M106 52 82 94h18l-6 34 28-46h-18z" fill="#0b1f3a"/></svg>`;
+const fatura = (a) => `<div class="fatura" data-in="${a}" data-fx="pop"><div class="topo"><span>Fatura de energia</span><b>CPFL Paulista</b></div>
+  <div class="linha"><span>Consumo do mês</span><i></i></div>
+  <div class="linha dest" data-in="${a + 1.1}" data-fx="pop"><span>Parcela do empréstimo</span><i></i></div>
+  <div class="linha tot"><span>Total</span><i></i></div></div>`;
+const cta = (a, t = 'Toque em Saiba mais') => `<div class="cta" data-in="${a}" data-fx="pop" data-pulso="1"><span>${t}</span><span>→</span></div><div class="rodape" data-in="${a + .3}">Simulação gratuita. Crédito sujeito a análise.</div>`;
+const item = (a, t) => `<div class="item" data-in="${a}" data-fx="esq">${check}${t}</div>`;
+const fim = (a, b) => `<div class="cena" data-de="${a}" data-ate="${b}">${raio}<div class="selo" data-in="${a + .1}">SIMULAÇÃO GRATUITA</div>
+  <h1 data-in="${a + .3}">Veja se tem na <em>sua cidade</em></h1><p class="sub" data-in="${a + .8}">Um consultor da sua região te chama no <b>WhatsApp.</b></p>${cta(a + 1.3)}</div>`;
+const V = {
+  1: { dur: 16, html: `
+    <div class="cena" data-de="0" data-ate="3.6"><div class="selo" data-in=".1">CLIENTE CPFL PAULISTA</div>
+      <h1 class="g" data-in=".3">Sua conta de luz pode virar <em>crédito</em></h1>${`<div data-in="1" data-fx="pop">${lamp}</div>`}</div>
+    <div class="cena" data-de="3.6" data-ate="8.6"><div class="selo" data-in="3.7">COMO FUNCIONA</div>
+      <h1 data-in="3.9">A parcela vem <em>na sua fatura</em></h1>${fatura(4.5)}<p class="sub" data-in="6.4">Sem boleto extra: <b>você paga tudo numa conta só.</b></p></div>
+    <div class="cena" data-de="8.6" data-ate="12.6">${raio}<div class="selo" data-in="8.7">O QUE PRECISA</div>
+      <h1 data-in="8.9">Só <em>3 coisas</em></h1><div class="lista">${item(9.5, 'Conta de luz no seu nome')}${item(10.2, 'CPF em mãos')}${item(10.9, 'Ser cliente CPFL Paulista')}</div></div>
+    ${fim(12.6, 16)}` },
+  2: { dur: 15.5, html: `
+    <div class="cena" data-de="0" data-ate="3.8"><div class="selo" data-in=".1" style="background:#e11d48;color:#fff">ATENÇÃO</div>
+      <h1 data-in=".3">Pediram dinheiro <em>antes</em> de liberar o empréstimo?</h1>
+      <div class="bolha" data-in="1.5" data-fx="esq"><small>Número desconhecido</small>Pra liberar o valor, é só pagar a taxa primeiro...</div></div>
+    <div class="cena" data-de="3.8" data-ate="6.6"><h1 class="g" data-in="3.9" style="margin-top:120px">Isso é</h1><div class="carimbo" data-in="4.4" data-fx="carimbo">GOLPE</div>
+      <p class="sub" data-in="5.2" style="text-align:center;margin-top:80px">Não pague. <b>Ninguém sério cobra antes.</b></p></div>
+    <div class="cena" data-de="6.6" data-ate="11.8">${raio}<div class="selo" data-in="6.7">CRÉDITO NA CONTA DE LUZ</div>
+      <h1 data-in="6.9">Aqui é <em>diferente</em></h1><div class="lista">${item(7.6, 'Simulação gratuita')}${item(8.4, 'Nenhum valor antecipado')}${item(9.2, 'Parcela na conta de luz')}</div></div>
+    ${fim(11.8, 15.5)}` },
+  3: { dur: 14, html: `
+    <div class="cena" data-de="0" data-ate="3.4"><div class="selo" data-in=".1">RESPONDA RÁPIDO</div>
+      <h1 class="g" data-in=".3">A conta de luz está <em>no seu nome?</em></h1>${`<div data-in="1.1" data-fx="pop">${lamp}</div>`}</div>
+    <div class="cena" data-de="3.4" data-ate="9.8">${raio}<div class="selo" data-in="3.5">ENTÃO VOCÊ PODE TER CRÉDITO</div>
+      <h1 data-in="3.7">Confere os <em>3 itens</em></h1><div class="lista">${item(4.5, 'Conta da CPFL Paulista no seu nome')}${item(5.6, 'CPF em mãos')}${item(6.7, 'Morar numa cidade atendida')}</div>
+      <p class="sub" data-in="7.8">Tem os três? <b>Já dá pra simular.</b></p></div>
+    ${fim(9.8, 14)}` },
+};
+document.getElementById('raiz').innerHTML = V[v].html;
+window.DUR = V[v].dur;
+const cl = (x) => Math.max(0, Math.min(1, x)), ease = (p) => 1 - Math.pow(1 - p, 3);
+const back = (p) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+window.render = (t) => {
+  document.querySelectorAll('.cena').forEach((c) => {
+    const a = +c.dataset.de, b = +c.dataset.ate, ult = b >= window.DUR;
+    c.style.opacity = Math.min(a === 0 ? 1 : cl((t - a) / .3), ult ? 1 : cl((b - t) / .3));
+    c.style.transform = `translateX(${(1 - ease(cl((t - a) / .35))) * (a === 0 ? 0 : 80)}px)`;
+  });
+  document.querySelectorAll('[data-in]').forEach((e) => {
+    const p = cl((t - +e.dataset.in) / .5), fx = e.dataset.fx || 'sobe';
+    e.style.opacity = cl(p * 2);
+    let tr = fx === 'sobe' ? `translateY(${(1 - ease(p)) * 70}px)` : fx === 'esq' ? `translateX(${(1 - ease(p)) * -120}px)`
+      : fx === 'carimbo' ? `rotate(-7deg) scale(${3 - 2 * ease(cl((t - +e.dataset.in) / .25))})` : `scale(${.7 + .3 * back(p)})`;
+    if (e.dataset.pulso && p >= 1) tr = `scale(${1 + .035 * Math.sin((t - +e.dataset.in - .5) * 5)})`;
+    e.style.transform = tr;
+  });
+};
+render(+new URLSearchParams(location.search).get('t') || 0);
+</script></body></html>

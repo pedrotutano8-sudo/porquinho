@@ -46,35 +46,40 @@ const item = (a, t) => `<div class="item" data-in="${a}" data-fx="esq">${check}$
 const fim = (a, b) => `<div class="cena" data-de="${a}" data-ate="${b}">${raio}<div class="selo" data-in="${a + .1}">SIMULAÇÃO GRATUITA</div>
   <h1 data-in="${a + .3}">Veja se tem na <em>sua região</em></h1><p class="sub" data-in="${a + .8}">Um consultor da sua região te chama no <b>WhatsApp.</b></p>${cta(a + 1.3)}</div>`;
 const chip = (a, t) => `<div class="chip" data-in="${a}" data-fx="pop">${t}</div>`;
+const fat = (a, d) => `<div class="fatura" data-in="${a}" data-fx="pop"><div class="topo"><span>Fatura de energia</span><b>CPFL Paulista</b></div>
+  <div class="linha"><span>Consumo do mês</span><i></i></div>${d ? `<div class="linha dest" data-in="${d}" data-fx="pop"><span>Parcela do empréstimo</span><i></i></div>` : ''}
+  <div class="linha tot"><span>Total</span><i></i></div></div>`;
+const fim2 = (a, b) => `<div class="cena" data-de="${a}" data-ate="${b}">${raio}<div class="selo" data-in="${a + .1}">SIMULAÇÃO GRATUITA</div>
+  <h1 data-in="${a + .25}">Faça uma <em>simulação</em></h1><p class="sub" data-in="${a + .7}">Veja se está disponível <b>na sua região.</b></p>
+  <div class="cta" data-in="${a + 1.1}" data-fx="pop" data-pulso="1"><span>Toque em Saiba mais</span><span>→</span></div><div class="rodape" data-in="${a + 1.4}">Crédito sujeito a análise. Não cobramos nenhum valor antecipado.</div></div>`;
 const V = {
-  1: { dur: 19, html: `
-    <div class="cena" data-de="0" data-ate="6"><h1 class="g" data-in=".1" style="margin-top:60px">Imprevisto <em>acontece</em></h1>
-      <div class="chips">${chip(.7, 'Conserto do carro')}${chip(1.0, 'Remédio')}${chip(1.3, 'Conta atrasada')}</div>
-      <p class="sub" data-in="1.9">E quando acontece, <b>ter com quem contar faz toda a diferença.</b></p></div>
-    <div class="cena" data-de="6" data-ate="12.3"><div class="selo" data-in="6.1">CONHEÇA</div>
-      <h1 data-in="6.3">Empréstimo na <em>conta de luz</em></h1>${fatura(8.6)}<p class="sub" data-in="10.9">A parcela vem na fatura. <b>Sem boleto extra.</b></p></div>
-    ${fim(12.3, 19)}` },
-  2: { dur: 20.3, html: `
-    <div class="cena" data-de="0" data-ate="4.2"><div class="selo" data-in=".1">DÚVIDA COMUM</div>
-      <h1 class="g" data-in=".25">Empréstimo na conta de luz <em>é golpe?</em></h1>
-      <div class="resp" data-in="3.1" data-fx="pop">Não é bem assim.</div></div>
-    <div class="cena" data-de="4.2" data-ate="8.6"><div class="selo" data-in="4.3">A MODALIDADE EXISTE</div>
-      <h1 data-in="4.5">A parcela vem na sua <em>fatura de energia</em></h1>${fatura(5.6)}</div>
-    <div class="cena" data-de="8.6" data-ate="12.4"><div class="selo" data-in="8.7" style="background:#e11d48;color:#fff">ATENÇÃO</div>
-      <h1 data-in="8.8">Pediram dinheiro <em>antes</em> de liberar o crédito?</h1><div class="carimbo" data-in="10.6" data-fx="carimbo" style="margin-top:110px">GOLPE</div></div>
-    <div class="cena" data-de="12.4" data-ate="17.4">${raio}<div class="selo" data-in="12.5">AQUI É ASSIM</div>
-      <h1 data-in="12.6">Crédito na <em>conta de luz</em></h1><div class="lista">${item(13.2, 'Simulação gratuita')}${item(14.6, 'Nada cobrado antecipado')}${item(15.8, 'Parcela na conta de luz')}</div></div>
-    ${fim(17.4, 20.3)}` },
-  3: { dur: 21, html: `
-    <div class="cena" data-de="0" data-ate="13.7"><div class="topochat" data-in="0.05"><div class="av">${lamp}</div><div><b>Crédito na Conta de Luz</b><span>online</span></div></div>
-      <div class="chat">
-        <div class="bolha eu" data-in=".3" data-fx="dir">Como faço pra pedir o empréstimo na conta de luz?</div>
-        <div class="bolha" data-in="3.4" data-fx="esq">É simples! Toque em <b>Saiba mais</b> e peça a simulação gratuita.</div>
-        <div class="bolha eu" data-in="7.6" data-fx="dir">E depois?</div>
-        <div class="bolha" data-in="8.5" data-fx="esq">Um consultor da sua região te chama no <b>WhatsApp</b> e acompanha tudo.</div></div></div>
-    <div class="cena" data-de="13.7" data-ate="18.1">${raio}<div class="selo" data-in="13.8">O QUE PRECISA</div>
-      <h1 data-in="13.9">Você só <em>precisa de</em></h1><div class="lista">${item(14.4, 'Conta de luz no seu nome')}${item(16.3, 'CPF em mãos')}</div></div>
-    ${fim(18.1, 21)}` },
+  1: { dur: 15, html: `
+    <div class="cena" data-de="0" data-ate="2.5"><h1 class="g" data-in=".05" style="margin-top:160px">Um dinheiro extra <em>te ajudaria hoje?</em></h1></div>
+    <div class="cena" data-de="2.5" data-ate="8.1"><div class="selo" data-in="2.6">EMPRÉSTIMO NA CONTA DE LUZ</div>
+      <h1 data-in="2.8">As parcelas vêm nas <em>próximas faturas</em></h1>${fat(4.2, 5.4)}</div>
+    <div class="cena" data-de="8.1" data-ate="11.2">${raio}<div class="lista" style="margin-top:140px">${item(8.25, 'Simples')}${item(9.1, 'Prático')}${item(9.8, 'Sem burocracia')}</div></div>
+    ${fim2(11.2, 15)}` },
+  2: { dur: 20.6, html: `
+    <div class="cena" data-de="0" data-ate="5"><div class="selo" data-in=".1">CRÉDITO PELA CONTA DE ENERGIA</div>
+      <h1 class="g" data-in=".25">Sabe como <em>funciona?</em></h1>${`<div data-in="1.2" data-fx="pop">${lamp}</div>`}
+      <div class="resp" data-in="3.7" data-fx="pop" style="margin-top:50px">É bem simples.</div></div>
+    <div class="cena" data-de="5" data-ate="9.6"><div class="selo" data-in="5.1">VOCÊ FAZ O EMPRÉSTIMO</div>
+      <h1 data-in="5.3">E as parcelas vêm nas <em>próximas faturas</em></h1>${fat(6.6, 7.6)}</div>
+    <div class="cena" data-de="9.6" data-ate="12.5"><h1 class="g" data-in="9.7" style="margin-top:60px">Crédito simples pra quem <em>precisa resolver</em></h1>
+      <div class="chips">${chip(10.3, 'Conserto do carro')}${chip(10.7, 'Remédio')}${chip(11.1, 'Conta atrasada')}</div></div>
+    <div class="cena" data-de="12.5" data-ate="16.8">${raio}<div class="selo" data-in="12.6">E TEM MAIS</div>
+      <h1 data-in="12.8">Atendimento <em>online</em></h1><div class="lista">${item(13.6, 'Direto do seu celular')}${item(14.8, 'Sem sair de casa')}</div></div>
+    ${fim2(16.8, 20.6)}` },
+  3: { dur: 18.8, html: `
+    <div class="cena" data-de="0" data-ate="4.8"><h1 class="g" data-in=".1">Você só precisa <em>disso</em></h1>${fat(1.1)}
+      <div class="resp" data-in="3.2" data-fx="pop" style="margin-top:60px;font-size:80px">A sua conta de luz</div></div>
+    <div class="cena" data-de="4.8" data-ate="8.7"><div class="selo" data-in="4.9">COMO FUNCIONA</div>
+      <h1 data-in="5.1">As parcelas são descontadas nas <em>próximas faturas</em></h1>${fat(5.9, 6.8)}</div>
+    <div class="cena" data-de="8.7" data-ate="11.2">${raio}<div class="lista" style="margin-top:160px">${item(8.85, 'Tudo às claras')}${item(9.9, 'Sem enrolação')}</div></div>
+    <div class="cena" data-de="11.2" data-ate="15.3"><h1 data-in="11.3" style="margin-top:0">Quer <em>praticidade?</em></h1>
+      <div class="topochat" data-in="12.3" style="margin-top:60px"><div class="av">${lamp}</div><div><b>Consultor</b><span>online no WhatsApp</span></div></div>
+      <div class="chat"><div class="bolha" data-in="12.9" data-fx="esq">Oi! Já vou fazer a sua simulação.</div><div class="bolha eu" data-in="14" data-fx="dir">Que rápido!</div></div></div>
+    ${fim2(15.3, 18.8)}` },
 };
 document.getElementById('raiz').innerHTML = V[v].html;
 window.DUR = V[v].dur;

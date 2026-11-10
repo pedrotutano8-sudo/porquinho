@@ -1,7 +1,7 @@
 import asyncio, subprocess, sys, os
 from playwright.async_api import async_playwright
 BASE='/home/claude/porquinho-repo/criativos'
-NOMES={'1':'V1-imprevisto','2':'V2-e-golpe','3':'V3-conversa'}
+NOMES={'1':'V1-dinheiro-extra','2':'V2-como-funciona','3':'V3-so-precisa-disso'}
 async def main(previa):
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
@@ -21,5 +21,5 @@ async def main(previa):
             ff.stdin.close()
             if ff.wait()==0: os.replace(tmp, f'{BASE}/videos/{nome}.mp4')
         await b.close()
-previa = {'1':[5,11.5,18],'2':[3.9,8,12,17],'3':[13,17.5]} if len(sys.argv)>1 else None
+previa = {'1':[2,7.5,10.8,14.5],'2':[4.7,12,16.5],'3':[4.5,10.9,15]} if len(sys.argv)>1 else None
 asyncio.run(main(previa))

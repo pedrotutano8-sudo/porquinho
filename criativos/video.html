@@ -26,6 +26,11 @@ h1.g { font-size:150px; }
 .cta span:last-child { font-size:72px; }
 .rodape { font-size:30px; color:#9fb0c8; margin-top:30px; text-align:center; }
 .lamp { width:440px; margin:70px auto 0; }
+.chips { display:flex; flex-wrap:wrap; gap:22px; margin-top:56px; } .chip { background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.2); border-radius:999px; padding:22px 36px; font-size:44px; font-weight:700; }
+.resp { align-self:flex-start; margin-top:80px; background:var(--amarelo); color:var(--navy); font-weight:900; font-size:96px; padding:30px 48px; border-radius:30px; transform-origin:left center; }
+.topochat { display:flex; align-items:center; gap:28px; background:rgba(255,255,255,.08); border-radius:32px; padding:26px 32px; } .topochat .av { width:110px; height:110px; border-radius:50%; background:#0b1f3a; overflow:hidden; flex-shrink:0; } .topochat .av svg { width:110px; margin:0; }
+.topochat b { display:block; font-size:44px; font-weight:800; } .topochat span { font-size:32px; color:#7ee2a8; font-weight:600; }
+.chat { margin-top:50px; display:flex; flex-direction:column; gap:30px; } .chat .bolha { margin-top:0; font-weight:600; } .bolha.eu { align-self:flex-end; background:#dcf8c6; border-bottom-left-radius:36px; border-bottom-right-radius:10px; }
 </style></head><body><div id="raiz"></div>
 <script>
 const v = new URLSearchParams(location.search).get('v') || '1';
@@ -39,32 +44,37 @@ const fatura = (a) => `<div class="fatura" data-in="${a}" data-fx="pop"><div cla
 const cta = (a, t = 'Toque em Saiba mais') => `<div class="cta" data-in="${a}" data-fx="pop" data-pulso="1"><span>${t}</span><span>→</span></div><div class="rodape" data-in="${a + .3}">Simulação gratuita. Crédito sujeito a análise.</div>`;
 const item = (a, t) => `<div class="item" data-in="${a}" data-fx="esq">${check}${t}</div>`;
 const fim = (a, b) => `<div class="cena" data-de="${a}" data-ate="${b}">${raio}<div class="selo" data-in="${a + .1}">SIMULAÇÃO GRATUITA</div>
-  <h1 data-in="${a + .3}">Veja se tem na <em>sua cidade</em></h1><p class="sub" data-in="${a + .8}">Um consultor da sua região te chama no <b>WhatsApp.</b></p>${cta(a + 1.3)}</div>`;
+  <h1 data-in="${a + .3}">Veja se tem na <em>sua região</em></h1><p class="sub" data-in="${a + .8}">Um consultor da sua região te chama no <b>WhatsApp.</b></p>${cta(a + 1.3)}</div>`;
+const chip = (a, t) => `<div class="chip" data-in="${a}" data-fx="pop">${t}</div>`;
 const V = {
-  1: { dur: 16, html: `
-    <div class="cena" data-de="0" data-ate="3.6"><div class="selo" data-in=".1">CLIENTE CPFL PAULISTA</div>
-      <h1 class="g" data-in=".3">Sua conta de luz pode virar <em>crédito</em></h1>${`<div data-in="1" data-fx="pop">${lamp}</div>`}</div>
-    <div class="cena" data-de="3.6" data-ate="8.6"><div class="selo" data-in="3.7">COMO FUNCIONA</div>
-      <h1 data-in="3.9">A parcela vem <em>na sua fatura</em></h1>${fatura(4.5)}<p class="sub" data-in="6.4">Sem boleto extra: <b>você paga tudo numa conta só.</b></p></div>
-    <div class="cena" data-de="8.6" data-ate="12.6">${raio}<div class="selo" data-in="8.7">O QUE PRECISA</div>
-      <h1 data-in="8.9">Só <em>3 coisas</em></h1><div class="lista">${item(9.5, 'Conta de luz no seu nome')}${item(10.2, 'CPF em mãos')}${item(10.9, 'Ser cliente CPFL Paulista')}</div></div>
-    ${fim(12.6, 16)}` },
-  2: { dur: 15.5, html: `
-    <div class="cena" data-de="0" data-ate="3.8"><div class="selo" data-in=".1" style="background:#e11d48;color:#fff">ATENÇÃO</div>
-      <h1 data-in=".3">Pediram dinheiro <em>antes</em> de liberar o empréstimo?</h1>
-      <div class="bolha" data-in="1.5" data-fx="esq"><small>Número desconhecido</small>Pra liberar o valor, é só pagar a taxa primeiro...</div></div>
-    <div class="cena" data-de="3.8" data-ate="6.6"><h1 class="g" data-in="3.9" style="margin-top:120px">Isso é</h1><div class="carimbo" data-in="4.4" data-fx="carimbo">GOLPE</div>
-      <p class="sub" data-in="5.2" style="text-align:center;margin-top:80px">Não pague. <b>Ninguém sério cobra antes.</b></p></div>
-    <div class="cena" data-de="6.6" data-ate="11.8">${raio}<div class="selo" data-in="6.7">CRÉDITO NA CONTA DE LUZ</div>
-      <h1 data-in="6.9">Aqui é <em>diferente</em></h1><div class="lista">${item(7.6, 'Simulação gratuita')}${item(8.4, 'Nenhum valor antecipado')}${item(9.2, 'Parcela na conta de luz')}</div></div>
-    ${fim(11.8, 15.5)}` },
-  3: { dur: 14, html: `
-    <div class="cena" data-de="0" data-ate="3.4"><div class="selo" data-in=".1">RESPONDA RÁPIDO</div>
-      <h1 class="g" data-in=".3">A conta de luz está <em>no seu nome?</em></h1>${`<div data-in="1.1" data-fx="pop">${lamp}</div>`}</div>
-    <div class="cena" data-de="3.4" data-ate="9.8">${raio}<div class="selo" data-in="3.5">ENTÃO VOCÊ PODE TER CRÉDITO</div>
-      <h1 data-in="3.7">Confere os <em>3 itens</em></h1><div class="lista">${item(4.5, 'Conta da CPFL Paulista no seu nome')}${item(5.6, 'CPF em mãos')}${item(6.7, 'Morar numa cidade atendida')}</div>
-      <p class="sub" data-in="7.8">Tem os três? <b>Já dá pra simular.</b></p></div>
-    ${fim(9.8, 14)}` },
+  1: { dur: 19, html: `
+    <div class="cena" data-de="0" data-ate="6"><h1 class="g" data-in=".1" style="margin-top:60px">Imprevisto <em>acontece</em></h1>
+      <div class="chips">${chip(.7, 'Conserto do carro')}${chip(1.0, 'Remédio')}${chip(1.3, 'Conta atrasada')}</div>
+      <p class="sub" data-in="1.9">E quando acontece, <b>ter com quem contar faz toda a diferença.</b></p></div>
+    <div class="cena" data-de="6" data-ate="12.3"><div class="selo" data-in="6.1">CONHEÇA</div>
+      <h1 data-in="6.3">Empréstimo na <em>conta de luz</em></h1>${fatura(8.6)}<p class="sub" data-in="10.9">A parcela vem na fatura. <b>Sem boleto extra.</b></p></div>
+    ${fim(12.3, 19)}` },
+  2: { dur: 20.3, html: `
+    <div class="cena" data-de="0" data-ate="4.2"><div class="selo" data-in=".1">DÚVIDA COMUM</div>
+      <h1 class="g" data-in=".25">Empréstimo na conta de luz <em>é golpe?</em></h1>
+      <div class="resp" data-in="3.1" data-fx="pop">Não é bem assim.</div></div>
+    <div class="cena" data-de="4.2" data-ate="8.6"><div class="selo" data-in="4.3">A MODALIDADE EXISTE</div>
+      <h1 data-in="4.5">A parcela vem na sua <em>fatura de energia</em></h1>${fatura(5.6)}</div>
+    <div class="cena" data-de="8.6" data-ate="12.4"><div class="selo" data-in="8.7" style="background:#e11d48;color:#fff">ATENÇÃO</div>
+      <h1 data-in="8.8">Pediram dinheiro <em>antes</em> de liberar o crédito?</h1><div class="carimbo" data-in="10.6" data-fx="carimbo" style="margin-top:110px">GOLPE</div></div>
+    <div class="cena" data-de="12.4" data-ate="17.4">${raio}<div class="selo" data-in="12.5">AQUI É ASSIM</div>
+      <h1 data-in="12.6">Crédito na <em>conta de luz</em></h1><div class="lista">${item(13.2, 'Simulação gratuita')}${item(14.6, 'Nada cobrado antecipado')}${item(15.8, 'Parcela na conta de luz')}</div></div>
+    ${fim(17.4, 20.3)}` },
+  3: { dur: 21, html: `
+    <div class="cena" data-de="0" data-ate="13.7"><div class="topochat" data-in="0.05"><div class="av">${lamp}</div><div><b>Crédito na Conta de Luz</b><span>online</span></div></div>
+      <div class="chat">
+        <div class="bolha eu" data-in=".3" data-fx="dir">Como faço pra pedir o empréstimo na conta de luz?</div>
+        <div class="bolha" data-in="3.4" data-fx="esq">É simples! Toque em <b>Saiba mais</b> e peça a simulação gratuita.</div>
+        <div class="bolha eu" data-in="7.6" data-fx="dir">E depois?</div>
+        <div class="bolha" data-in="8.5" data-fx="esq">Um consultor da sua região te chama no <b>WhatsApp</b> e acompanha tudo.</div></div></div>
+    <div class="cena" data-de="13.7" data-ate="18.1">${raio}<div class="selo" data-in="13.8">O QUE PRECISA</div>
+      <h1 data-in="13.9">Você só <em>precisa de</em></h1><div class="lista">${item(14.4, 'Conta de luz no seu nome')}${item(16.3, 'CPF em mãos')}</div></div>
+    ${fim(18.1, 21)}` },
 };
 document.getElementById('raiz').innerHTML = V[v].html;
 window.DUR = V[v].dur;
@@ -79,7 +89,7 @@ window.render = (t) => {
   document.querySelectorAll('[data-in]').forEach((e) => {
     const p = cl((t - +e.dataset.in) / .5), fx = e.dataset.fx || 'sobe';
     e.style.opacity = cl(p * 2);
-    let tr = fx === 'sobe' ? `translateY(${(1 - ease(p)) * 70}px)` : fx === 'esq' ? `translateX(${(1 - ease(p)) * -120}px)`
+    let tr = fx === 'sobe' ? `translateY(${(1 - ease(p)) * 70}px)` : fx === 'esq' ? `translateX(${(1 - ease(p)) * -120}px)` : fx === 'dir' ? `translateX(${(1 - ease(p)) * 120}px)`
       : fx === 'carimbo' ? `rotate(-7deg) scale(${3 - 2 * ease(cl((t - +e.dataset.in) / .25))})` : `scale(${.7 + .3 * back(p)})`;
     if (e.dataset.pulso && p >= 1) tr = `scale(${1 + .035 * Math.sin((t - +e.dataset.in - .5) * 5)})`;
     e.style.transform = tr;

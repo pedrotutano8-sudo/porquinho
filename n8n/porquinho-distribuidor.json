@@ -2,34 +2,60 @@
   "name": "Porquinho · Lead da Meta → distribuidor → WhatsApp do PJ",
   "nodes": [
     {
-      "parameters": { "event": "newLead", "page": { "__rl": true, "mode": "list", "value": "" }, "form": { "__rl": true, "mode": "list", "value": "" }, "options": {} },
+      "parameters": {
+        "event": "newLead",
+        "page": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "form": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
       "name": "Meta · Novo lead",
       "type": "n8n-nodes-base.facebookLeadAdsTrigger",
       "typeVersion": 1,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "notes": "Escolher a credencial do Facebook Lead Ads, a página e o formulário da campanha."
     },
     {
-      "parameters": { "httpMethod": "POST", "path": "porquinho-lead-teste", "options": {} },
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "porquinho-lead-teste",
+        "options": {}
+      },
       "id": "a1b2c3d4-0002-4000-8000-000000000002",
       "name": "Teste · Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 220],
+      "position": [
+        0,
+        220
+      ],
       "webhookId": "porquinho-lead-teste",
       "notes": "POST com JSON {\"nome\",\"telefone\",\"cidade\",\"companhia_energia\",\"conta_no_nome\",\"valor\"} para testar o fluxo inteiro sem a Meta."
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// ===== CONFIG =====\n// Companhias de energia atendidas pela Crefaz. Vazio = não filtra por companhia.\nconst ATENDIDAS = ['CPFL Paulista'];\n// ==================\n\nconst norm = (s) => String(s ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();\n\nfunction campos(j) {\n  const out = {};\n  // Formato bruto da Meta: field_data = [{ name, values: [...] }]\n  const fd = j.field_data || j.data?.field_data;\n  if (Array.isArray(fd)) fd.forEach((f) => (out[norm(f.name)] = Array.isArray(f.values) ? f.values.join(', ') : f.values));\n  // Formato simplificado do n8n ou webhook de teste: { data: {...} } ou plano\n  const plano = (j.data && typeof j.data === 'object' && !Array.isArray(j.data)) ? j.data : (j.body && typeof j.body === 'object' ? j.body : j);\n  Object.entries(plano).forEach(([k, v]) => { if (typeof v !== 'object') out[norm(k)] = v; });\n  return out;\n}\n\nconst pega = (c, ...nomes) => { for (const n of nomes) for (const k of Object.keys(c)) if (k.includes(n)) return c[k]; return null; };\n\nreturn $input.all().map((it) => {\n  const j = it.json;\n  const c = campos(j);\n  const nome = pega(c, 'full_name', 'nome', 'name');\n  const telefone = pega(c, 'phone', 'telefone', 'whatsapp', 'celular');\n  const email = pega(c, 'email');\n  const cidade = pega(c, 'city', 'cidade');\n  const companhia = pega(c, 'companhia', 'energia', 'distribuidora');\n  const contaNome = pega(c, 'conta_no_nome', 'nome_na_conta', 'esta_no_seu_nome', 'no_seu_nome', 'titular');\n  const valor = pega(c, 'valor');\n  const produto = pega(c, 'produto', 'tipo') || 'Empréstimo na conta de luz';\n\n  let qualificado = true, motivo = null;\n  if (contaNome != null && /^n(a|ã)o/.test(norm(contaNome))) { qualificado = false; motivo = 'Conta de luz não está no nome'; }\n  if (qualificado && ATENDIDAS.length && companhia && !ATENDIDAS.map(norm).includes(norm(companhia))) { qualificado = false; motivo = 'Companhia de energia não atendida: ' + companhia; }\n\n  return { json: {\n    p_nome: nome,\n    p_telefone: telefone,\n    p_email: email,\n    p_cidade: cidade,\n    p_produto: produto,\n    p_respostas: { ...c, companhia_energia: companhia, conta_no_nome: contaNome, valor },\n    p_origem: j.leadgen_id || j.id ? 'meta' : 'manual',\n    p_meta_lead_id: String(j.leadgen_id || j.id || '') || null,\n    p_campanha: j.campaign_name || j.campaign?.name || null,\n    p_anuncio: j.ad_name || j.ad?.name || null,\n    p_qualificado: qualificado,\n    p_motivo_fora_perfil: motivo,\n    _resumo: { companhia, contaNome, valor }\n  } };\n});"
+        "jsCode": "// ===== CONFIG =====\n// Companhias de energia atendidas pela Crefaz. Vazio = não filtra por companhia.\nconst ATENDIDAS = ['CPFL Paulista'];\n// ==================\n\nconst norm = (s) => String(s ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();\n\nfunction campos(j) {\n  const out = {};\n  // Formato bruto da Meta: field_data = [{ name, values: [...] }]\n  const fd = j.field_data || j.data?.field_data;\n  if (Array.isArray(fd)) fd.forEach((f) => (out[norm(f.name)] = Array.isArray(f.values) ? f.values.join(', ') : f.values));\n  // Formato simplificado do n8n ou webhook de teste: { data: {...} } ou plano\n  const plano = (j.data && typeof j.data === 'object' && !Array.isArray(j.data)) ? j.data : (j.body && typeof j.body === 'object' ? j.body : j);\n  Object.entries(plano).forEach(([k, v]) => { if (typeof v !== 'object') out[norm(k)] = v; });\n  return out;\n}\n\nconst chave = (s) => norm(s).replace(/[_\\s]+/g, ' ');\nconst pega = (c, ...nomes) => { for (const n of nomes) for (const k of Object.keys(c)) if (k.includes(n)) return c[k]; return null; };\n\nreturn $input.all().map((it) => {\n  const j = it.json;\n  const c = campos(j);\n  const nome = pega(c, 'full_name', 'nome_completo') ?? c['nome'] ?? c['name'] ?? null;\n  const telefone = pega(c, 'phone', 'telefone', 'whatsapp', 'celular');\n  const email = pega(c, 'email');\n  const cidade = pega(c, 'city', 'cidade');\n  const companhia = pega(c, 'companhia', 'energia', 'distribuidora');\n  const contaNome = pega(c, 'titular', 'conta_no_nome', 'nome_na_conta', 'esta_no_seu_nome', 'no_seu_nome');\n  const valor = pega(c, 'valor');\n  const produto = pega(c, 'produto', 'tipo') || 'Empréstimo na conta de luz';\n\n  let qualificado = true, motivo = null;\n  if (contaNome != null && /^n(a|ã)o/.test(norm(contaNome))) { qualificado = false; motivo = 'Conta de luz não está no nome'; }\n  if (qualificado && ATENDIDAS.length && companhia && !ATENDIDAS.map(chave).includes(chave(companhia))) { qualificado = false; motivo = 'Companhia de energia não atendida: ' + companhia; }\n\n  return { json: {\n    p_nome: nome,\n    p_telefone: telefone,\n    p_email: email,\n    p_cidade: cidade,\n    p_produto: produto,\n    p_respostas: { ...c, companhia_energia: companhia, conta_no_nome: contaNome, valor },\n    p_origem: j.leadgen_id || j.id ? 'meta' : 'manual',\n    p_meta_lead_id: String(j.leadgen_id || j.id || '') || null,\n    p_campanha: j.campaign_name || j.campaign?.name || null,\n    p_anuncio: j.ad_name || j.ad?.name || null,\n    p_qualificado: qualificado,\n    p_motivo_fora_perfil: motivo,\n    _resumo: { companhia, contaNome, valor }\n  } };\n});"
       },
       "id": "a1b2c3d4-0003-4000-8000-000000000003",
       "name": "Normaliza e qualifica",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 100]
+      "position": [
+        240,
+        100
+      ]
     },
     {
       "parameters": {
@@ -46,14 +72,32 @@
       "name": "Supabase · receber e distribuir",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [480, 100],
+      "position": [
+        480,
+        100
+      ],
       "notes": "Credencial Supabase do projeto Porquinho com a chave service_role (secret)."
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
-          "conditions": [ { "id": "c1", "leftValue": "={{ $json.pj_whatsapp }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } } ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.pj_whatsapp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
           "combinator": "and"
         },
         "options": {}
@@ -62,7 +106,10 @@
       "name": "Tem PJ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [720, 100],
+      "position": [
+        720,
+        100
+      ],
       "notes": "Sem PJ = fora do perfil ou nenhum PJ com investimento no mês. Fica registrado no painel."
     },
     {
@@ -74,13 +121,18 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.pj_whatsapp, text: (() => { const n = $('Normaliza e qualifica').item.json; const r = n._resumo || {}; const tel = String(n.p_telefone || '').replace(/\\D/g, ''); const tel55 = tel.length === 10 || tel.length === 11 ? '55' + tel : tel; return ['*Novo lead para você* 🐷', '', '*Nome:* ' + (n.p_nome || '-'), '*WhatsApp:* https://wa.me/' + tel55, n.p_cidade ? '*Cidade:* ' + n.p_cidade : null, r.companhia ? '*Companhia de energia:* ' + r.companhia : null, r.valor ? '*Valor:* ' + r.valor : null, '*Produto:* ' + (n.p_produto || '-'), '', 'Chame em até 5 minutos: lead quente fecha mais.'].filter((x) => x !== null).join('\\n'); })() }) }}",
-        "options": { "timeout": 15000 }
+        "options": {
+          "timeout": 15000
+        }
       },
       "id": "a1b2c3d4-0006-4000-8000-000000000006",
       "name": "Evolution · avisa o PJ",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 0],
+      "position": [
+        960,
+        0
+      ],
       "onError": "continueErrorOutput",
       "notes": "Trocar SEU-EVOLUTION e NOME_DA_INSTANCIA. Credencial Header Auth: nome apikey, valor = chave da instância."
     },
@@ -99,7 +151,10 @@
       "name": "Supabase · entregue",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, -80]
+      "position": [
+        1200,
+        -80
+      ]
     },
     {
       "parameters": {
@@ -116,17 +171,90 @@
       "name": "Supabase · falhou",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, 100]
+      "position": [
+        1200,
+        100
+      ]
     }
   ],
   "connections": {
-    "Meta · Novo lead": { "main": [[{ "node": "Normaliza e qualifica", "type": "main", "index": 0 }]] },
-    "Teste · Webhook": { "main": [[{ "node": "Normaliza e qualifica", "type": "main", "index": 0 }]] },
-    "Normaliza e qualifica": { "main": [[{ "node": "Supabase · receber e distribuir", "type": "main", "index": 0 }]] },
-    "Supabase · receber e distribuir": { "main": [[{ "node": "Tem PJ?", "type": "main", "index": 0 }]] },
-    "Tem PJ?": { "main": [[{ "node": "Evolution · avisa o PJ", "type": "main", "index": 0 }], []] },
-    "Evolution · avisa o PJ": { "main": [[{ "node": "Supabase · entregue", "type": "main", "index": 0 }], [{ "node": "Supabase · falhou", "type": "main", "index": 0 }]] }
+    "Meta · Novo lead": {
+      "main": [
+        [
+          {
+            "node": "Normaliza e qualifica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teste · Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normaliza e qualifica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza e qualifica": {
+      "main": [
+        [
+          {
+            "node": "Supabase · receber e distribuir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase · receber e distribuir": {
+      "main": [
+        [
+          {
+            "node": "Tem PJ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem PJ?": {
+      "main": [
+        [
+          {
+            "node": "Evolution · avisa o PJ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Evolution · avisa o PJ": {
+      "main": [
+        [
+          {
+            "node": "Supabase · entregue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase · falhou",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "pinData": {}
 }
